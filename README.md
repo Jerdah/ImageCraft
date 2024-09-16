@@ -1,2 +1,2 @@
 # ImageCraft
-Direct Image to Speech Syntheis with VoiceCraft
+Direct Image to Speech Synthesis with VoiceCraft
