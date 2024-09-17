@@ -9,7 +9,7 @@ from data import config
 from models.modules.imagecaptioner import ImageCaptioner
 
 
-class ImageCaptioner:
+class ImageCaptionerPipeline:
     """
     A pipeline for predicting image captions using a pre-trained image captioning model.
     """

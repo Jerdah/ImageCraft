@@ -45,7 +45,7 @@ def get_output_audio(self, audio_tensors, codec_audio_sr):
     return buffer.read()
 
 
-class VoiceCraftTTS:
+class VoiceCraftTTSPipeline:
     """
     A pipeline for converting text to speech.
     """
@@ -163,10 +163,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    pipeline = VoiceCraftTTS(args.model, args.encodec)
+    pipeline = VoiceCraftTTSPipeline(args.model, args.encodec)
     audio_buffer = pipeline.generate(args.text)
     unique_filename = str(uuid.uuid4())
     audio_path = f"resources/generated/{unique_filename}.wav"
     with open(audio_path, "wb") as f:
-        f.write(audio_buffer.getbuffer())
+        f.write(audio_buffer)
     print(audio_path)
