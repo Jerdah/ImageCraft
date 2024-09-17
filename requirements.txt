@@ -1,0 +1,19 @@
+numpy: 1.26.4
+pandas: 2.2.2
+pillow=: 10.3.0
+matplotlib: 3.8.2
+torch: 2.3.0
+torchvision: 0.18.0
+torchaudio=: 2.3.0
+torchmetrics=: 0.11.1
+transformers: 4.42.3
+timm: 1.0.7
+huggingface_hub: 0.22.2
+datasets: 2.16.0
+safetensors: 0.4.3
+tokenizers: 0.19.1
+tqdm: 4.66.4
+phonemizer: 3.2.1
+
+
+git+https://github.com/facebookresearch/audiocraft.git@c5157b5bf14bf83449c17ea1eeb66c19fb4bc7f0#egg=audiocraft
