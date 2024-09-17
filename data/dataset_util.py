@@ -9,7 +9,7 @@ from data.captiondataset import CaptionDataset
 
 def process_flickr30k(csv_file_path: str, image_folder: str) -> pd.DataFrame:
     df = pd.read_csv(csv_file_path, delimiter="|")
-    # df.drop_duplicates(subset=['image_name'], inplace=True)
+    df.drop_duplicates(subset=["image_name"], inplace=True)
     df.drop(columns=" comment_number", axis=1, inplace=True)
     df.reset_index(drop=True, inplace=True)
     df.rename({" comment": "caption"}, axis=1, inplace=True)
