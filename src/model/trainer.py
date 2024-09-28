@@ -257,7 +257,7 @@ if __name__ == "__main__":
         num_sanity_val_steps=0,
         default_root_dir=model_dir,
         callbacks=[PushToHubCallback(), early_stop_callback],
-        logger=TensorBoardLogger(save_dir=tensorboard_log_dir),
+        logger=TensorBoardLogger(name="ImageCraft", save_dir=tensorboard_log_dir),
     )
 
     trainer.fit(
