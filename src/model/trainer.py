@@ -222,7 +222,7 @@ if __name__ == "__main__":
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-    os.environ["USER"] = "nsandiman"
+    os.environ["USER"] = "imagecraft"
 
     torch.set_float32_matmul_precision("high")
 
@@ -236,7 +236,7 @@ if __name__ == "__main__":
     model_checkpoints_path = env_config["model_checkpoints"]
     processed_data_dir = env_config["data"]["processed_dir"]
     log_data_dir = env_config["data"]["log_dir"]
-    tensorboard_dir = env_config["data"]["tensorboard_dir"]
+    tensorboard_log_dir = env_config["data"]["tensorboard_log_dir"]
 
     finetuned_model_path = env_config[f"model_{dataset}"]
 
@@ -314,7 +314,7 @@ if __name__ == "__main__":
         num_sanity_val_steps=0,
         default_root_dir=model_dir,
         callbacks=[PushToHubCallback(), early_stop_callback],
-        logger=TensorBoardLogger(save_dir=tensorboard_dir),
+        logger=TensorBoardLogger(save_dir=tensorboard_log_dir),
     )
 
     trainer.fit(

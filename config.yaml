@@ -8,5 +8,5 @@ data:
   processed_dir: data/processed
   log_dir: data/logs
   wandb_dir: data/wandb
-  tensorboard_dir: data/tensorboard
+  tensorboard_log_dir: data/tensorboard/logs
 
