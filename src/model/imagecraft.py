@@ -190,8 +190,8 @@ class ImageCraftModel(nn.Module):
         output_audio = get_output_audio(audio_tensors, decode_config["codec_audio_sr"])
 
         # Empty cuda cache between runs
-        # if torch.cuda.is_available():
-        #     torch.cuda.empty_cache()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         return output_audio
 

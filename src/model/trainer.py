@@ -6,8 +6,6 @@ import torch
 
 from datasets import load_from_disk
 
-from pytorch_lightning.callbacks import EarlyStopping
-
 
 from transformers import PaliGemmaForConditionalGeneration
 
@@ -26,6 +24,7 @@ from src.utils.train_utils import eval_collate_fn, train_collate_fn
 
 from lightning.pytorch import Trainer
 from lightning.pytorch.loggers import TensorBoardLogger
+from lightning.pytorch.callbacks import Callback, EarlyStopping
 
 
 from huggingface_hub import HfApi
@@ -35,7 +34,7 @@ api = HfApi()
 model_flavor = "nsandiman/imagecraft-ft-fk-224"
 
 
-class PushToHubCallback(pl.Callback):
+class PushToHubCallback(Callback):
     def on_train_epoch_end(self, trainer, pl_module):
         pl_module.model.push_to_hub(
             model_flavor,
@@ -124,62 +123,6 @@ class ImageCraftTrainer(LightningModule):
             batch_size=self.batch_size,
             logger=True,
         )
-
-        # generated_ids = self.model.generate(
-        #     input_ids=input_ids,
-        #     attention_mask=attention_mask,
-        #     pixel_values=pixel_values,
-        #     max_new_tokens=100,
-        # )
-
-        # predictions = self.processor.batch_decode(
-        #     generated_ids, skip_special_tokens=True
-        # )
-
-        # ed_scores = []
-        # bleu_scores = []
-        # bleu_weights = (0.25, 0.25, 0, 0)
-        # for pred, caption, reference_captions in zip(
-        #     predictions, captions, reference_captions
-        # ):
-
-        #     bleu_candidate = pred.lower().split()
-        #     bleu_reference = [sub.lower().split() for sub in reference_captions]
-
-        #     bleu_score = sentence_bleu(
-        #         bleu_reference, bleu_candidate, weights=bleu_weights
-        #     )
-        #     bleu_score_str = "{:.2f}".format(mean(bleu_score))
-        #     bleu_scores.append(bleu_score)
-
-        #     pred = re.sub(r"(?:(?<=>) | (?=</s_))", "", pred)
-        #     ed_scores.append(
-        #         edit_distance(pred, caption) / max(len(pred), len(caption))
-        #     )
-        #     if len(ed_scores) == 1:
-        #         print(f"Prediction: {pred}")
-        #         print(f"    Answer: {caption}")
-        #         print(f" Normed ED: {ed_scores[0]}")
-        #         print(f"Bleu Score: {bleu_score_str}")
-
-        # self.log(
-        #     "val_bleu_score",
-        #     mean(bleu_scores),
-        #     on_step=True,
-        #     on_epoch=True,
-        #     prog_bar=True,
-        #     batch_size=self.batch_size,
-        # )
-        # self.log(
-        #     "val_edit_distance",
-        #     mean(ed_scores),
-        #     on_step=True,
-        #     on_epoch=True,
-        #     prog_bar=True,
-        #     batch_size=self.batch_size,
-        # )
-
-        # return ed_scores  # loss
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
