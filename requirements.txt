@@ -19,6 +19,5 @@ matplotlib
 peft
 accelerate
 bitsandbytes
-pytorch_lightning
-wandb
+lightning
 huggingface_hub[hf_transfer]
