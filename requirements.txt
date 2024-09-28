@@ -1,0 +1,24 @@
+-e git+https://github.com/facebookresearch/audiocraft.git@f83babff6b5e97f75562127c4cc8122229c8f099#egg=audiocraft
+phonemizer
+nltk
+spaces
+huggingface-hub
+num2words
+transformers
+datasets
+numpy
+pillow
+safetensors
+tokenizers
+torch==2.1.0
+torchaudio
+torchvision
+tqdm
+timm
+matplotlib
+peft
+accelerate
+bitsandbytes
+pytorch_lightning
+wandb
+huggingface_hub[hf_transfer]

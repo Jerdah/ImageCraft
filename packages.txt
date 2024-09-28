@@ -1,0 +1,14 @@
+espeak-ng
+espeak
+espeak-data
+libespeak1
+libespeak-dev
+festival*
+build-essential
+flac 
+libasound2-dev
+libsndfile1-dev
+vorbis-tools
+libxml2-dev
+libxslt-dev
+zlib1g-dev

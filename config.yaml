@@ -1,0 +1,12 @@
+model_flickr: models/imagecraft-3b-fk-224.pth
+model_coco: models/imagecraft-3b-co-224.pth
+model_checkpoints: models/checkpoints
+model_dir: models
+data:
+  raw_dir: data/raw
+  interim_dir: data/interim
+  processed_dir: data/processed
+  log_dir: data/logs
+  wandb_dir: data/wandb
+  tensorboard_dir: data/tensorboard
+
