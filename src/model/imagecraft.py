@@ -42,7 +42,9 @@ class ImageCraftModel(nn.Module):
 
         seed_everything(1)
 
-    def generate(self, image_path: str, prompt: str, max_tokens=100, do_sample=False):
+    def generate(
+        self, image_path: str, prompt="describe en", max_tokens=100, do_sample=False
+    ):
 
         model_inputs = get_model_inputs(self.processor, prompt, image_path, self.device)
         input_ids = model_inputs["input_ids"]

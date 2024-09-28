@@ -47,7 +47,7 @@ class PushToHubCallback(Callback):
 
 
 early_stop_callback = EarlyStopping(
-    monitor="val_loss", patience=3, verbose=False, mode="min"
+    monitor="val_loss", patience=10, verbose=False, mode="min"
 )
 
 
