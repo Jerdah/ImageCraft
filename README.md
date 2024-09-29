@@ -95,10 +95,11 @@ kaggle datasets download -d mnassrib/ms-coco
 ### +**Installation Instructions Details**
 Ensure you have all dependencies installed with specific versions:
 
-Python >= 3.8
-torch==2.0.1
-transformers==4.27.1
-gradio==3.0
+- Python >= 3.8
+- torch==2.0.1
+- transformers==4.27.1
+- gradio==3.0
+  
 If you encounter installation errors, refer to the `requirements.txt` or contact us for help.
 
 ## **Usage**
