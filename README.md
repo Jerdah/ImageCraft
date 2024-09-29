@@ -180,8 +180,8 @@ To add unit tests, consider creating a `tests/` directory with the following:
 
 ## **Results and Visualization**
 
-**Training Curves**: Loss and perplexity are plotted using matplotlib after each epoch to visualize performance.
-**Generated Samples**: Audio samples from the model are saved and can be played back to evaluate the quality of speech generation.
+- **Training Curves**: Loss and perplexity are plotted using matplotlib after each epoch to visualize performance.
+- **Generated Samples**: Audio samples from the model are saved and can be played back to evaluate the quality of speech generation.
 
 ## **Future Work**
 
