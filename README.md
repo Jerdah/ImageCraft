@@ -1,3 +1,8 @@
+
+
+
+
+
 # **ImageCraft: Direct Image-to-Speech Synthesis**
 
 ## **Overview**
@@ -14,9 +19,10 @@ ImageCraft is a deep learning project designed to generate spoken descriptions d
 8. [Deployment](#deployment)
 9. [Testing](#testing)
 10. [Results and Visualization](#results-and-visualization)
-11. [Future Work](#future-work)
-12. [Contributing](#contributing)
-13. [License](#license)
+12. [Future Work](#future-work)
+13. [Contributing](#contributing)
+14. [License](#license)
+15. [References](#references)
 
 ## **Project Objectives**
 The primary objectives of ImageCraft are:
@@ -59,9 +65,9 @@ The Flickr30k dataset is used for training and evaluation. It contains paired im
 
 ## **Model Architecture**
 ImageCraft consists of three major components:
-1. **Vision Transformer (ViT)**: The encoder is implemented to convert images into feature vectors. The ViT is pre-trained, and only certain layers are fine-tuned during training.
-2. **Custom GPT Decoder**: The decoder is responsible for generating text captions from the image features. The architecture is similar to a GPT model, consisting of multiple transformer-based blocks.
-3. **VoiceCraft Module**: Converts the generated text into speech using a text-to-speech synthesis model.
+1. **Vision Transformer (ViT)**: Encodes images into feature vectors. The ViT is pre-trained, with selective layers fine-tuned during training.
+2. **Custom GPT Decoder**: Generates text captions from the image features. This architecture consists of multiple transformer-based blocks similar to GPT.
+3. **VoiceCraft Module**: Converts generated text into speech using a text-to-speech synthesis model.
 
 ## **Installation**
 To set up the environment and install the necessary dependencies, follow the steps below:
@@ -85,6 +91,15 @@ pip install -r requirements.txt
 4. **Download Dataset from Kaggle**: 
 kaggle datasets download -d hsankesara/flickr-image-dataset
 kaggle datasets download -d mnassrib/ms-coco
+
+### +**Installation Instructions Details**
+Ensure you have all dependencies installed with specific versions:
+
+Python >= 3.8
+torch==2.0.1
+transformers==4.27.1
+gradio==3.0
+If you encounter installation errors, refer to the `requirements.txt` or contact us for help.
 
 ## **Usage**
 ### **Inference**
@@ -119,8 +134,8 @@ python inference.py --input_image path/to/image.jpg --output_audio path/to/outpu
 ### **Training**
 The training pipeline uses the following setup:
 
-**Freezing Strategy**: Initially, only the GPT decoder is trained while the ViT encoder remains frozen. Later epochs unfreeze the ViT for end-to-end fine-tuning.
-**Metrics**: Training loss and test loss are monitored along with perplexity, which measures the quality of text predictions.
+- **Freezing Strategy**: Initially, only the GPT decoder is trained while the ViT encoder remains frozen. Later epochs unfreeze the ViT for end-to-end fine-tuning.
+- **Metrics**: Training loss and test loss are monitored along with perplexity, which measures the quality of text predictions.
 
 To train the model from scratch:
 
@@ -144,7 +159,7 @@ tensorboard --logdir runs
 
 ## **Deployment**
 
-The deployment of the model can be done using the REST API provided by Flask. Additionally, the model can be containerized using Docker for reproducibility and easy deployment on cloud platforms.
+The model can be deployed using the REST API provided by Flask. Additionally, the model can be containerized using Docker for reproducibility and easy deployment on cloud platforms.
 
 ### **Run API**:
 ```bash
@@ -171,7 +186,8 @@ To add unit tests, consider creating a `tests/` directory with the following:
 
 ## **Future Work**
 
-**Real-Time Processing**: Optimize the model for real-time inference on edge devices.
+- **Real-Time Processing**: Optimize the model for real-time inference on edge devices.
+- **Improvement in Text Generation**: Integrate semantic analysis to enhance caption quality.
 
 ## **Contributing**
 
@@ -181,10 +197,10 @@ Fork the repository.
 Create a branch (`feature-branch`).
 Make your changes and submit a pull request.
 
+## **References**
 
-## **License**
-
-This project is licensed under ...
+- **VoiceCraft**: The VoiceCraft text-to-speech module used in this project is based on the repository provided by Facebook Research. For more details, visit the [VoiceCraft GitHub](https://github.com/jasonppy/VoiceCraft) repository.
+- **Vision Transformer (ViT)**: The Vision Transformer architecture is inspired by "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale" by Dosovitskiy et al. (2020). [Paper link](https://arxiv.org/abs/2010.11929)
 
 ## **Acknowledgments**
 
