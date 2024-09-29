@@ -188,4 +188,4 @@ This project is licensed under ...
 
 ## **Acknowledgments**
 
-- Thanks to nsandiman, ravinamore-ml, masengug and jerdah
+- Thanks to [https://github.com/nsandiman](nsandiman), [https://github.com/ravinamore-ml](ravinamore-ml), [https://github.com/Masengug](Masengug) and [https://github.com/Jerdah](Jerdah)
