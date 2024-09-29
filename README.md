@@ -20,8 +20,6 @@ ImageCraft is a deep learning project designed to generate spoken descriptions d
 9. [Testing](#testing)
 10. [Results and Visualization](#results-and-visualization)
 12. [Future Work](#future-work)
-13. [Contributing](#contributing)
-14. [License](#license)
 15. [References](#references)
 
 ## **Project Objectives**
@@ -189,14 +187,6 @@ To add unit tests, consider creating a `tests/` directory with the following:
 
 - **Real-Time Processing**: Optimize the model for real-time inference on edge devices.
 - **Improvement in Text Generation**: Integrate semantic analysis to enhance caption quality.
-
-## **Contributing**
-
-We welcome contributions! To contribute:
-
-Fork the repository.
-Create a branch (`feature-branch`).
-Make your changes and submit a pull request.
 
 ## **References**
 
