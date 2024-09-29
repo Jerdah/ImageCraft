@@ -1,10 +1,11 @@
 -e git+https://github.com/facebookresearch/audiocraft.git@f83babff6b5e97f75562127c4cc8122229c8f099#egg=audiocraft
+-e git+https://github.com/huggingface/transformers.git
 phonemizer
 nltk
 spaces
 huggingface-hub
 num2words
-transformers
+# transformers
 datasets
 numpy
 pillow
@@ -20,4 +21,6 @@ peft
 accelerate
 bitsandbytes
 lightning
+evaluate
+bert_score
 huggingface_hub[hf_transfer]
