@@ -46,6 +46,5 @@ def eval_collate_fn(examples, processor, device):
     input_ids = inputs["input_ids"]
     attention_mask = inputs["attention_mask"]
     pixel_values = inputs["pixel_values"]
-    captions = inputs["labels"]
 
     return input_ids, attention_mask, pixel_values, captions

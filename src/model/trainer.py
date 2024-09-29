@@ -59,10 +59,11 @@ class ImageCraftTrainer(LightningModule):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.save_hyperparameters()
 
     def prepare_data(self):
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
 
         env_config = tools.load_config()
 
@@ -72,19 +73,19 @@ class ImageCraftTrainer(LightningModule):
         self.train_data_path = f"{processed_dir}/{dataset}/train"
         self.test_data_path = f"{processed_dir}/{dataset}/test"
 
-        if config.train_dataset == "flickr":
+        if self.config.train_dataset == "flickr":
             download_flickr(
                 raw_dir,
                 interim_dir,
                 processed_dir,
-                dataset_size=config.train_dataset_size,
+                dataset_size=self.config.train_dataset_size,
             )
         else:
             download_coco(
                 raw_dir,
                 interim_dir,
                 processed_dir,
-                dataset_size=self.train_dataset_size,
+                dataset_size=self.config.train_dataset_size,
             )
 
         bnb_config = BitsAndBytesConfig(
@@ -113,11 +114,11 @@ class ImageCraftTrainer(LightningModule):
         self.model = PaliGemmaForConditionalGeneration.from_pretrained(
             modelid,
             torch_dtype=torch.bfloat16,
-            device_map=self.device,
+            device_map=device,
             revision="bfloat16",
             quantization_config=bnb_config,
         )
-        self.model.to(self.device)
+        # self.model.to(device)
         self.model = get_peft_model(self.model, lora_config)
 
     def setup(self, stage: str):
@@ -152,8 +153,9 @@ class ImageCraftTrainer(LightningModule):
             on_step=True,
             on_epoch=True,
             prog_bar=True,
-            batch_size=self.batch_size,
+            batch_size=self.config.train_batch_size,
             logger=True,
+            add_dataloader_idx=False,
         )
         self.log(
             "train_perplexity",
@@ -161,13 +163,15 @@ class ImageCraftTrainer(LightningModule):
             on_step=True,
             on_epoch=True,
             prog_bar=True,
-            batch_size=self.batch_size,
+            batch_size=self.config.train_batch_size,
             logger=True,
+            add_dataloader_idx=False,
         )
 
         return loss
 
     def validation_step(self, batch, batch_idx):
+
         input_ids, attention_mask, pixel_values, captions = batch
 
         with torch.no_grad():
@@ -181,31 +185,60 @@ class ImageCraftTrainer(LightningModule):
             generated_ids, skip_special_tokens=True
         )
 
-        bert_scores = []
+        bert_f1_scores = []
+        bert_precision_scores = []
+        bert_recall_scores = []
 
         for pred, caption in zip(predictions, captions):
             predicted_text = parts[1] if len(parts := pred.split("\n", 1)) > 1 else pred
             predictions = [predicted_text]
             references = [caption]
 
+            # print(f"caption: {caption}")
+            # print(f"predicted: {predicted_text}")
+
             scores = self.bertscore_metric.compute(
                 predictions=predictions, references=references, lang="en"
             )
             f1 = scores["f1"][0]
-            bert_scores.append(f1)
+            precision = scores["precision"][0]
+            recall = scores["recall"][0]
+            bert_f1_scores.append(f1)
+            bert_precision_scores.append(precision)
+            bert_recall_scores.append(recall)
 
-        avg_bert_score = np.mean(bert_scores)
         self.log(
-            "F1",
-            avg_bert_score,
+            "Precision",
+            np.mean(bert_precision_scores),
             on_step=True,
             on_epoch=True,
             prog_bar=True,
-            batch_size=self.batch_size,
+            batch_size=self.config.train_batch_size,
             logger=True,
+            add_dataloader_idx=False,
+        )
+        self.log(
+            "Recall",
+            np.mean(bert_recall_scores),
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=self.config.train_batch_size,
+            logger=True,
+            add_dataloader_idx=False,
+        )
+        self.log(
+            "F1",
+            np.mean(bert_f1_scores),
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=self.config.train_batch_size,
+            logger=True,
+            add_dataloader_idx=False,
         )
 
-        return avg_bert_score
+        return np.mean(bert_f1_scores)
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
@@ -215,12 +248,13 @@ class ImageCraftTrainer(LightningModule):
         return optimizer
 
     def train_dataloader(self):
+        device = "cuda" if torch.cuda.is_available() else "cpu"
         return DataLoader(
             self.train_dataset,
             batch_size=self.config.train_batch_size,
             shuffle=True,
             collate_fn=partial(
-                train_collate_fn, processor=self.processor, device=self.device
+                train_collate_fn, processor=self.processor, device=device
             ),
         )
 
@@ -229,7 +263,7 @@ class ImageCraftTrainer(LightningModule):
             self.test_dataset,
             batch_size=self.config.train_batch_size,
             collate_fn=partial(
-                train_collate_fn, processor=self.processor, device=self.device
+                eval_collate_fn, processor=self.processor, device=device
             ),
         )
 
@@ -237,9 +271,11 @@ class ImageCraftTrainer(LightningModule):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train the imagecraft model.")
     parser.add_argument("--dataset", type=str, default="flickr")
-    parser.add_argument("--epochs", type=int, default=2)
+    parser.add_argument("--dataset_size", type=str, default="30%")
+    parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--max_epochs", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--batch_size", type=int, default=4)
+    parser.add_argument("--max_tokens", type=int, default=100)
     parser.add_argument("--learning_rate", type=int, default=2e-5)
     parser.add_argument("--accumulate_grad_batches", type=int, default=4)
     parser.add_argument("--gradient_clip_val", type=float, default=1.0)
@@ -252,7 +288,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     config = ImageCraftConfig
+    config.max_tokens = args.max_tokens
     config.train_dataset = args.dataset
+    config.train_dataset_size = args.dataset_size
     config.train_epochs = args.epochs
     config.train_max_epochs = args.max_epochs
     config.train_batch_size = args.batch_size
