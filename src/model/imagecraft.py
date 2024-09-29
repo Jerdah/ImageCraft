@@ -90,6 +90,9 @@ class ImageCraftModel(nn.Module):
         decoded_text = self.processor.tokenizer.decode(
             generated_tokens, skip_special_tokens=True
         )
+        decoded_text = (
+            parts[1] if len(parts := decoded_text.split("\n", 1)) > 1 else decoded_text
+        )
         print(decoded_text)
         # voicecraft sampling
 

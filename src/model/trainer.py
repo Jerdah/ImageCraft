@@ -60,6 +60,7 @@ class ImageCraftTrainer(LightningModule):
         super().__init__()
         self.config = config
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.save_hyperparameters()
 
     def prepare_data(self):
 
@@ -125,6 +126,11 @@ class ImageCraftTrainer(LightningModule):
         self.test_dataset = load_from_disk(self.test_data_path)
 
         self.bertscore_metric = evaluate.load("bertscore")
+
+    def teardown(self, stage: str):
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     def training_step(self, batch, batch_idx):
 
@@ -280,7 +286,6 @@ if __name__ == "__main__":
     )
 
     imageCraft_trainer = ImageCraftTrainer(config)
-    imageCraft_trainer.save_hyperparameters()
 
     trainer = Trainer(
         accelerator="auto",
