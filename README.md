@@ -1,9 +1,9 @@
 
-
+# **ImageCraft: Direct Image-to-Speech Synthesis**
 
 ------------------------------------------------------------------------------------------------------------------------------------------------
 
-# **ImageCraft: Direct Image-to-Speech Synthesis**
+
 
 ## **Overview**
 ImageCraft is a deep learning project designed to generate spoken descriptions directly from images. The goal is to create a model that combines vision and text-to-speech capabilities for accessibility tools, multimedia storytelling, and human-computer interaction. It utilizes a Vision Transformer (ViT) for image encoding, a custom GPT model for text generation, and VoiceCraft for converting text into speech.
