@@ -5,7 +5,8 @@ from typing import Tuple
 from PIL import Image
 from safetensors import safe_open
 
-from transformers import AutoTokenizer
+
+import transformers
 
 from src.model.modules.paligemmaprocessor import PaliGemmaProcessor
 from src.model.modules.gemma import (
@@ -41,11 +42,28 @@ def get_model_inputs(
     return model_inputs
 
 
+def get_attr(obj, names):
+    if len(names) == 1:
+        return getattr(obj, names[0])
+    else:
+        return get_attr(getattr(obj, names[0]), names[1:])
+
+
+def set_attr(obj, names, val):
+    if len(names) == 1:
+        return setattr(obj, names[0], val)
+    else:
+        return set_attr(getattr(obj, names[0]), names[1:], val)
+
+
 def load_hf_model(
     model_path: str, device: str
-) -> Tuple[PaliGemmaForConditionalGeneration, AutoTokenizer]:
+) -> Tuple[PaliGemmaForConditionalGeneration, transformers.AutoTokenizer]:
+
     # Load the tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(model_path, padding_side="right")
+    tokenizer = transformers.AutoTokenizer.from_pretrained(
+        model_path, padding_side="right"
+    )
     assert tokenizer.padding_side == "right"
 
     # Find all the *.safetensors files

@@ -22,37 +22,15 @@ from src.utils import tools
 
 from torch.utils.data import DataLoader
 
-from src.utils.train_utils import eval_collate_fn, train_collate_fn
+from src.utils.train_utils import eval_collate_fn, save_to_hub, train_collate_fn
 
 from lightning.pytorch import Trainer
 from lightning.pytorch.loggers import TensorBoardLogger
-from lightning.pytorch.callbacks import Callback, EarlyStopping
+from lightning.pytorch.callbacks import EarlyStopping
 
 import evaluate
 
-
-from huggingface_hub import HfApi
-
-api = HfApi()
-
-model_flavor = "nsandiman/imagecraft-ft-fk-224"
-
-
-class PushToHubCallback(Callback):
-    def on_train_epoch_end(self, trainer, pl_module):
-        pl_module.model.push_to_hub(
-            model_flavor,
-            commit_message=f"Training in progress, epoch {trainer.current_epoch}",
-        )
-
-    def on_train_end(self, trainer, pl_module):
-        pl_module.processor.push_to_hub(model_flavor, commit_message=f"Training done")
-        pl_module.model.push_to_hub(model_flavor, commit_message=f"Training done")
-
-
-early_stop_callback = EarlyStopping(
-    monitor="train_loss", patience=3, verbose=False, mode="min"
-)
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 
 
 class ImageCraftTrainer(LightningModule):
@@ -88,13 +66,31 @@ class ImageCraftTrainer(LightningModule):
                 dataset_size=self.config.train_dataset_size,
             )
 
+        modelid = "google/paligemma-3b-pt-224"
+
+        self.processor = AutoProcessor.from_pretrained(modelid)
+
+        self.model = PaliGemmaForConditionalGeneration.from_pretrained(
+            modelid, device_map=device
+        )
+
+        # for param in self.model.vision_tower.parameters():
+        #     param.requires_grad = False
+
+        # for param in self.model.multi_modal_projector.parameters():
+        #     param.requires_grad = True
+
         bnb_config = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
             bnb_4bit_compute_type=torch.bfloat16,
         )
         lora_config = LoraConfig(
             r=8,
+            lora_dropout=0.05,
+            bias="none",
+            lora_alpha=32,
             target_modules=[
                 "q_proj",
                 "o_proj",
@@ -113,22 +109,21 @@ class ImageCraftTrainer(LightningModule):
 
         self.model = PaliGemmaForConditionalGeneration.from_pretrained(
             modelid,
-            torch_dtype=torch.bfloat16,
             device_map=device,
-            revision="bfloat16",
             quantization_config=bnb_config,
         )
-        # self.model.to(device)
         self.model = get_peft_model(self.model, lora_config)
 
     def setup(self, stage: str):
 
-        self.train_dataset = load_from_disk(self.train_data_path)
-        self.test_dataset = load_from_disk(self.test_data_path)
+        self.training_dataset = load_from_disk(self.train_data_path)
+        self.testing_dataset = load_from_disk(self.test_data_path)
 
         self.bertscore_metric = evaluate.load("bertscore")
 
     def teardown(self, stage: str):
+
+        del self.model
 
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -240,6 +235,23 @@ class ImageCraftTrainer(LightningModule):
 
         return np.mean(bert_f1_scores)
 
+    def on_train_end(self):
+
+        repository = (
+            "nsandiman/imagecraft-ft-fk-224"
+            if self.config.train_dataset == "flickr"
+            else "nsandiman/imagecraft-ft-co-224"
+        )
+
+        # self.model = self.model.merge_and_unload()
+
+        save_to_hub(self.model, self.processor.tokenizer, repository, "Final model")
+
+        # self.model.save_pretrained(repository)
+        # self.processor.save_pretrained(repository)
+        # self.model.push_to_hub(repository, commit_message=f"Training done")
+        # self.processor.push_to_hub(repository, commit_message=f"Training done")
+
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
             self.parameters(), lr=self.config.train_learning_rate
@@ -250,7 +262,7 @@ class ImageCraftTrainer(LightningModule):
     def train_dataloader(self):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         return DataLoader(
-            self.train_dataset,
+            self.training_dataset,
             batch_size=self.config.train_batch_size,
             shuffle=True,
             collate_fn=partial(
@@ -260,7 +272,7 @@ class ImageCraftTrainer(LightningModule):
 
     def val_dataloader(self):
         return DataLoader(
-            self.test_dataset,
+            self.testing_dataset,
             batch_size=self.config.train_batch_size,
             collate_fn=partial(
                 eval_collate_fn, processor=self.processor, device=device
@@ -303,9 +315,9 @@ if __name__ == "__main__":
     config.train_num_nodes = args.num_nodes
     config.train_limit_val_batches = args.limit_val_batches
 
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-    os.environ["USER"] = "imagecraft"
+    # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    # os.environ["USER"] = "imagecraft"
 
     torch.set_float32_matmul_precision("high")
 
@@ -317,26 +329,25 @@ if __name__ == "__main__":
     model_dir = env_config[f"model_dir"]
     tensorboard_log_dir = env_config["data"]["tensorboard_log_dir"]
 
-    model_flavor = (
-        "nsandiman/imagecraft-ft-fk-224"
-        if dataset == "flickr"
-        else "nsandiman/imagecraft-ft-co-224"
-    )
-
     imageCraft_trainer = ImageCraftTrainer(config)
 
     trainer = Trainer(
         accelerator="auto",
         strategy="auto",
+        enable_checkpointing=True,
+        enable_progress_bar=True,
+        enable_model_summary=True,
         max_epochs=config.train_max_epochs,
         accumulate_grad_batches=config.train_accumulate_grad_batches,
         check_val_every_n_epoch=config.train_check_val_every_n_epoch,
         gradient_clip_val=config.train_gradient_clip_val,
-        precision=config.train_precision,
+        # precision=config.train_precision,
         limit_val_batches=config.train_limit_val_batches,
         num_sanity_val_steps=0,
         default_root_dir=model_dir,
-        callbacks=[PushToHubCallback(), early_stop_callback],
+        callbacks=[
+            EarlyStopping(monitor="train_loss", patience=3, verbose=False, mode="min")
+        ],
         logger=TensorBoardLogger(name="imageCraft", save_dir=tensorboard_log_dir),
     )
 

@@ -5,7 +5,6 @@ nltk
 spaces
 huggingface-hub
 num2words
-# transformers
 datasets
 numpy
 pillow

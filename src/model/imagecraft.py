@@ -1,6 +1,5 @@
 from argparse import Namespace
 import os
-import re
 import time
 import torch
 import torchaudio
@@ -22,7 +21,6 @@ from src.utils.util import (
     get_output_audio,
     replace_numbers_with_words,
     sample_top_p,
-    save_output_audio,
     seed_everything,
     split_line_to_sentences,
 )

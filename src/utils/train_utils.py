@@ -1,4 +1,6 @@
+from tempfile import TemporaryDirectory
 import torch
+from huggingface_hub import HfApi
 
 PROMPT = "<image>Describe en<bos>"
 
@@ -48,3 +50,18 @@ def eval_collate_fn(examples, processor, device):
     pixel_values = inputs["pixel_values"]
 
     return input_ids, attention_mask, pixel_values, captions
+
+
+def save_to_hub(model, tokenizer, repository, commit_message):
+    api = HfApi()
+    with TemporaryDirectory() as tmp_dir:
+        model = model.merge_and_unload()
+        model.save_pretrained(tmp_dir)
+        tokenizer.save_pretrained(tmp_dir)
+
+        # Push to Hub
+        api.upload_folder(
+            folder_path=tmp_dir,
+            repo_id=repository,
+            commit_message=commit_message,
+        )

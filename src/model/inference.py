@@ -19,13 +19,14 @@ from src.utils import tools
 import torchvision.transforms as transforms
 
 
-def run():
+def run(model_path):
     # image = data["image"]
     prompt = "Caption the image."
 
     config = ImageCraftConfig()
     model = ImageCraftModel(config)
-    model.from_pretrained("/content/ImageCraft/models/paligemma-3b-pt-224")
+    # model.from_pretrained("/content/ImageCraft/models/paligemma-3b-pt-224")
+    model.from_pretrained(model_path)
 
     image_path = "media/images/1.jpeg"
 
@@ -41,8 +42,11 @@ if __name__ == "__main__":
         description="Running inference on imagecraft model."
     )
     parser.add_argument("--dataset", type=str, default="flickr")
+    parser.add_argument("--model_path", type=str, default="models/imagecraft-ft-fk-224")
 
     args = parser.parse_args()
+
+    model_path = args.model_path
 
     config = tools.load_config()
 
@@ -51,4 +55,4 @@ if __name__ == "__main__":
     # test_data_path = f"{processed_data_dir}/{args.dataset}/test"
     # test_data = load_from_disk(test_data_path)
     # data = test_data[0]
-    run()
+    run(model_path)

@@ -517,7 +517,7 @@ class PaliGemmaForConditionalGeneration(nn.Module):
         self.config = config
         self.vision_tower = SiglipVisionModel(config.vision_config)
         self.multi_modal_projector = PaliGemmaMultiModalProjector(config)
-        self.vocab_size = config.vocab_size
+        self.vocab_size = config.text_config.vocab_size
 
         language_model = GemmaForCausalLM(config.text_config)
         self.language_model = language_model
