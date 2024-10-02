@@ -10,7 +10,6 @@ numpy
 pillow
 safetensors
 tokenizers
-torch==2.1.0
 torchaudio
 torchvision
 tqdm

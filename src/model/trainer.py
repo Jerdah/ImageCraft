@@ -30,7 +30,7 @@ from lightning.pytorch.callbacks import EarlyStopping
 
 import evaluate
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 
 
 class ImageCraftTrainer(LightningModule):
@@ -66,14 +66,6 @@ class ImageCraftTrainer(LightningModule):
                 dataset_size=self.config.train_dataset_size,
             )
 
-        modelid = "google/paligemma-3b-pt-224"
-
-        self.processor = AutoProcessor.from_pretrained(modelid)
-
-        self.model = PaliGemmaForConditionalGeneration.from_pretrained(
-            modelid, device_map=device
-        )
-
         # for param in self.model.vision_tower.parameters():
         #     param.requires_grad = False
 
@@ -81,10 +73,7 @@ class ImageCraftTrainer(LightningModule):
         #     param.requires_grad = True
 
         bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_compute_type=torch.bfloat16,
+            load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True
         )
         lora_config = LoraConfig(
             r=8,
@@ -105,11 +94,15 @@ class ImageCraftTrainer(LightningModule):
 
         modelid = "google/paligemma-3b-pt-224"
 
+        modelid = "google/paligemma-3b-pt-224"
+
         self.processor = AutoProcessor.from_pretrained(modelid)
 
         self.model = PaliGemmaForConditionalGeneration.from_pretrained(
             modelid,
-            device_map=device,
+            torch_dtype=torch.bfloat16,
+            device_map="auto",
+            revision="bfloat16",
             quantization_config=bnb_config,
         )
         self.model = get_peft_model(self.model, lora_config)
@@ -265,14 +258,17 @@ class ImageCraftTrainer(LightningModule):
             self.training_dataset,
             batch_size=self.config.train_batch_size,
             shuffle=True,
+            num_workers=0,
             collate_fn=partial(
                 train_collate_fn, processor=self.processor, device=device
             ),
         )
 
     def val_dataloader(self):
+        device = "cuda" if torch.cuda.is_available() else "cpu"
         return DataLoader(
             self.testing_dataset,
+            num_workers=0,
             batch_size=self.config.train_batch_size,
             collate_fn=partial(
                 eval_collate_fn, processor=self.processor, device=device
@@ -293,7 +289,7 @@ if __name__ == "__main__":
     parser.add_argument("--gradient_clip_val", type=float, default=1.0)
     parser.add_argument("--check_val_every_n_epoch", type=int, default=1)
     parser.add_argument("--warmup_steps", type=int, default=2)
-    parser.add_argument("--precision", type=str, default="bf16-mixed")
+    parser.add_argument("--precision", type=str, default="bf16-true")
     parser.add_argument("--num_nodes", type=int, default=1)
     parser.add_argument("--limit_val_batches", type=int, default=5)
 
@@ -329,19 +325,21 @@ if __name__ == "__main__":
     model_dir = env_config[f"model_dir"]
     tensorboard_log_dir = env_config["data"]["tensorboard_log_dir"]
 
-    imageCraft_trainer = ImageCraftTrainer(config)
+    model = ImageCraftTrainer(config)
+    # model = torch.compile(model)
 
     trainer = Trainer(
-        accelerator="auto",
+        accelerator="gpu",
         strategy="auto",
-        enable_checkpointing=True,
+        enable_checkpointing=False,
         enable_progress_bar=True,
         enable_model_summary=True,
+        min_epochs=1,
         max_epochs=config.train_max_epochs,
         accumulate_grad_batches=config.train_accumulate_grad_batches,
         check_val_every_n_epoch=config.train_check_val_every_n_epoch,
         gradient_clip_val=config.train_gradient_clip_val,
-        # precision=config.train_precision,
+        precision=config.train_precision,
         limit_val_batches=config.train_limit_val_batches,
         num_sanity_val_steps=0,
         default_root_dir=model_dir,
@@ -351,4 +349,4 @@ if __name__ == "__main__":
         logger=TensorBoardLogger(name="imageCraft", save_dir=tensorboard_log_dir),
     )
 
-    trainer.fit(imageCraft_trainer)
+    trainer.fit(model)
