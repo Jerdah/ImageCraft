@@ -1,5 +1,7 @@
 import io
 import os
+from pathlib import Path
+from tempfile import TemporaryDirectory
 import torch
 import torchaudio
 import random
@@ -9,6 +11,7 @@ from urllib.parse import urlparse
 from os.path import exists
 import re
 from num2words import num2words
+import uuid
 
 from typing import List, Optional, Dict, Union, Tuple, Iterable
 
@@ -37,7 +40,7 @@ def replace_numbers_with_words(sentence):
     return re.sub(r"\b\d+\b", replace_with_words, sentence)
 
 
-def get_output_audio(audio_tensors, codec_audio_sr):
+def save_to_buffer(audio_tensors, codec_audio_sr):
 
     result = torch.cat(audio_tensors, 1)
     buffer = io.BytesIO()
@@ -46,9 +49,13 @@ def get_output_audio(audio_tensors, codec_audio_sr):
     return buffer.read()
 
 
-def save_output_audio(audio_path, frames, codec_audio_sr):
-
-    torchaudio.save(audio_path, frames, int(codec_audio_sr), format="wav")
+def save_to_file(audio_tensors, codec_audio_sr):
+    generated_audio_dir = f"media/voicecraft/generated"
+    Path(generated_audio_dir).mkdir(parents=True, exist_ok=True)
+    filename = f"{generated_audio_dir}/{str(uuid.uuid4())}.wav"
+    tensors = torch.cat(audio_tensors, 1)
+    torchaudio.save(filename, tensors, int(codec_audio_sr), format="wav")
+    return filename
 
 
 def split_line_to_sentences(line):

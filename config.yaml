@@ -1,6 +1,7 @@
 model_flickr: models/imagecraft-3b-fk-224.pth
-model_coco: models/imagecraft-3b-co-224.pth
+model_coco: models/imagecraft-ft-co-224
 model_checkpoints: models/checkpoints
+model_pretrained: models/pretrained
 model_dir: models
 data:
   raw_dir: data/raw

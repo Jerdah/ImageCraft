@@ -1,7 +1,7 @@
 from transformers import PretrainedConfig
 
 
-class ImageCraftConfig:
+class ImageCraftFullConfig:
     def __init__(
         self,
         voicecraft_model_name="gigaHalfLibri330M_TTSEnhanced_max16s.pth",
@@ -9,14 +9,14 @@ class ImageCraftConfig:
         voicecraft_top_k=0,
         voicecraft_top_p=0.9,
         voicecraft_temperature=1,
-        voicecraft_kvcache=1,
+        voicecraft_kvcache=0,
         voicecraft_codec_sr=50,
         voicecraft_codec_audio_sr=16000,
         voicecraft_silence_tokens=[1388, 1898, 131],
         voicecraft_stop_repetition=3,
         voicecraft_sample_batch_size=2,
         voicecraft_seed=1,
-        voicecraft_cut_off_sec=67.87,
+        voicecraft_cut_off_sec=7.87,
         voicecraft_voice_audio="84_121550_000074_000000.wav",
         voicecraft_voice_transcript="But when I had approached so near to them The common object, which the sense deceives, Lost not by distance any of its marks",
         max_tokens=100,
@@ -32,7 +32,7 @@ class ImageCraftConfig:
         train_gradient_clip_val=1.0,
         train_check_val_every_n_epoch=1,
         train_warmup_steps=2,
-        train_precision="bf16-mixed",
+        train_precision="bf16-true",
         train_num_nodes=1,
         train_limit_val_batches=5,
     ):

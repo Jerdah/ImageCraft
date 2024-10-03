@@ -1,4 +1,5 @@
 -e git+https://github.com/facebookresearch/audiocraft.git@f83babff6b5e97f75562127c4cc8122229c8f099#egg=audiocraft
+git+https://github.com/huggingface/accelerate.git
 git+https://github.com/huggingface/transformers.git
 phonemizer
 nltk
@@ -16,7 +17,6 @@ tqdm
 timm
 matplotlib
 peft
-accelerate
 bitsandbytes
 lightning
 evaluate
