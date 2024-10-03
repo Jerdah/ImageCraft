@@ -378,9 +378,9 @@ class ImageCraft(nn.Module):
 
     @torch.inference_mode()
     def generate(self, image, max_tokens=300, do_sample=False, output_type="file"):
-        text = self._generate_caption(image, max_tokens, do_sample)
-        speech_output = self._generate_speech(text, output_type)
-        return speech_output
+        transcript = self._generate_caption(image, max_tokens, do_sample)
+        speech_output = self._generate_speech(transcript, output_type)
+        return transcript, speech_output
 
     @classmethod
     def from_pretrained(
