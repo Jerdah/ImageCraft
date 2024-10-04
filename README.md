@@ -109,6 +109,24 @@ You can use the provided Gradio interface or run the inference script to generat
 
 ```python
 
+import sys
+import os
+
+sys.path.append('/content/src/')
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["USER"] = "imagecraft"
+
+import gradio as gr
+
+from bert_score import score
+
+import evaluate
+
+from src.model.imagecraft import ImageCraft
+
+model = ImageCraft.from_pretrained("nsandiman/imagecraft-ft-co-224")
+
 def imagecraft_interface(image_path, reference_text):
   """Process image inputs and generate audio response."""
   transcript, audio_buffer = model.generate(image_path, output_type="buffer")
