@@ -167,7 +167,7 @@ from bert_score import score
 
 import evaluate
 
-from src.model.imagecraft import ImageCraft
+from src.model.modules.imagecraft import ImageCraft
 
 model = ImageCraft.from_pretrained("nsandiman/imagecraft-ft-co-224")
 
