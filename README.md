@@ -182,6 +182,8 @@ To add unit tests, consider creating a `tests/` directory with the following:
 
 - **Training Curves**: Loss and perplexity are plotted using matplotlib after each epoch to visualize performance.
 - **Generated Samples**: Audio samples from the model are saved and can be played back to evaluate the quality of speech generation.
+- **Gradio demo app**
+- ![alt text](https://github.com/Jerdah/ImageCraft/blob/main/reports/figures/gradio_app_demo.png)
 
 ## **Future Work**
 
