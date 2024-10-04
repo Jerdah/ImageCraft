@@ -161,7 +161,7 @@ gradio_interface.launch(debug=False)
 
 ```bash
 # run inference and return the audio file path
-python -m src.model.inference --image "media/images/4.jpeg" --output_type "file"
+python -m src.model.inference --image_path "media/images/1.jpeg" --output_type "file"
 ```
 
 ## **Training and Evaluation**
@@ -176,7 +176,7 @@ To train the model from scratch:
 
 ```python
 #train the model
-python -m src.model.trainer --dataset "flickr" --dataset_size "5%" --batch_size 2 --max_epochs 2
+python -m src.model.train --dataset "flickr" --dataset_size "5%" --batch_size 2 --max_epochs 2
 ```
 
 ### **Evaluation Metrics**
