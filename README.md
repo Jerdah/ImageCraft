@@ -55,7 +55,6 @@ ImageCraft/
 │           └── mfa_alignments/
 |
 ├── models/
-│   ├── images/
 |   └── pretrained/
 │       ├── imagecraft/
 │       └── voicecraft/
