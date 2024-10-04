@@ -17,7 +17,7 @@ from peft import get_peft_model, LoraConfig
 
 
 from src.data.download import download_coco, download_flickr
-from src.model.modules.configs import ImageCraftConfig
+from src.model.modules.trainconfig import TrainConfig
 from src.utils import tools
 
 from torch.utils.data import DataLoader
@@ -231,9 +231,9 @@ class ImageCraftTrainer(LightningModule):
     def on_train_end(self):
 
         repository = (
-            "nsandiman/imagecraft-ft-fk-224"
+            "nsandiman/imagecraft-ft-fk-224-pre"
             if self.config.train_dataset == "flickr"
-            else "nsandiman/imagecraft-ft-co-224"
+            else "nsandiman/imagecraft-ft-co-224-pre"
         )
 
         # self.model = self.model.merge_and_unload()
@@ -295,7 +295,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    config = ImageCraftConfig
+    config = TrainConfig
     config.max_tokens = args.max_tokens
     config.train_dataset = args.dataset
     config.train_dataset_size = args.dataset_size
@@ -310,10 +310,6 @@ if __name__ == "__main__":
     config.train_precision = args.precision
     config.train_num_nodes = args.num_nodes
     config.train_limit_val_batches = args.limit_val_batches
-
-    # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-    # os.environ["USER"] = "imagecraft"
 
     torch.set_float32_matmul_precision("high")
 

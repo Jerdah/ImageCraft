@@ -1,6 +1,6 @@
 import os
 
-from src.model.imagecraft import ImageCraft
+from src.model.modules.imagecraft import ImageCraft
 
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
