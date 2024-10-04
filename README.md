@@ -6,7 +6,7 @@
 
 
 ## **Overview**
-ImageCraft is a deep learning project designed to generate spoken descriptions directly from images. The goal is to create a model that combines vision and text-to-speech capabilities for accessibility tools, multimedia storytelling, and human-computer interaction. It utilizes a Vision Transformer (ViT) for image encoding, a custom GPT model for text generation, and VoiceCraft for converting text into speech.
+ImageCraft is a deep learning project designed to generate spoken descriptions directly from images. The goal is to create a model that combines vision and text-to-speech capabilities for accessibility tools, multimedia storytelling, and human-computer interaction. It utilizes a vision transformer (SigLIP) for image encoding, Gemma for text decoding, and VoiceCraft for speech synthesis.
 
 ## **Table of Contents**
 1. [Project Objectives](#project-objectives)
@@ -25,8 +25,8 @@ ImageCraft is a deep learning project designed to generate spoken descriptions d
 ## **Project Objectives**
 The primary objectives of ImageCraft are:
 - To create a multimodal pipeline that converts input images into meaningful spoken descriptions.
-- To utilize transformer-based models, specifically a Vision Transformer (ViT) as an image encoder and a custom GPT decoder to generate text descriptions.
-- To facilitate real-time audio captioning of images for accessibility use cases.
+- To utilize transformer-based models, specifically a vision transformer (SigLIP) as an image encoder and a Gemma decoder.
+- To facilitate image-to-speech for accessibility use cases.
 
 ## **Directory Structure**
 The primary objectives of ImageCraft are:
@@ -108,9 +108,9 @@ The Flickr30k dataset is used for training and evaluation. It contains paired im
 
 ## **Model Architecture**
 ImageCraft consists of three major components:
-1. **Vision Transformer (ViT)**: Encodes images into feature vectors. The ViT is pre-trained, with selective layers fine-tuned during training.
-2. **Custom GPT Decoder**: Generates text captions from the image features. This architecture consists of multiple transformer-based blocks similar to GPT.
-3. **VoiceCraft Module**: Converts generated text into speech using a text-to-speech synthesis model.
+1. **Vision Transformer (SigLIP)**: Calculates the image embeddings.
+2. **Gemma Decoder**: Decodes text from the image features.
+3. **VoiceCraft Module**: The speech synthesis model.
 
 ## **Installation**
 To set up the environment and install the necessary dependencies, follow the steps below:
@@ -294,7 +294,7 @@ To add unit tests, consider creating a `tests/` directory with the following:
 ## **References**
 
 - **VoiceCraft**: The VoiceCraft text-to-speech module used in this project is based on the repository provided by Facebook Research. For more details, visit the [VoiceCraft GitHub](https://github.com/jasonppy/VoiceCraft) repository.
-- **Vision Transformer (ViT)**: The Vision Transformer architecture is inspired by "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale" by Dosovitskiy et al. (2020). [Paper link](https://arxiv.org/abs/2010.11929)
+- **Vision Transformer (SigLIP)**: The Vision Transformer architecture is inspired by "Sigmoid Loss for Language Image Pre-Training" by Zhai et al. (2023). [Paper link](https://arxiv.org/abs/2303.15343)
 
 ## **Acknowledgments**
 
