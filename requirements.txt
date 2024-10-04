@@ -21,4 +21,5 @@ bitsandbytes
 lightning
 evaluate
 bert_score
+rouge_score
 huggingface_hub[hf_transfer]
