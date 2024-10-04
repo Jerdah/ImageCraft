@@ -60,6 +60,7 @@ ImageCraft/
 │       └── voicecraft/
 |
 ├── notebooks/
+│   └── ImageCraft-Notebook.ipynb
 |
 ├── reports/
 │   └── figures/
@@ -78,14 +79,6 @@ ImageCraft/
 |   |   ├── train_utils.py
 │   |   └── util.py
 │   └── visualization/
-│
-├── notebooks/
-│   └── ImageCraft-Notebook.ipynb
-├── src/
-│   ├── data_preparation.py
-│   ├── train.py
-│   ├── inference.py
-│   └── utils.py
 │
 ├── config.yaml
 |
