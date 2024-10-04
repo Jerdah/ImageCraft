@@ -34,26 +34,71 @@ The primary objectives of ImageCraft are:
 ```css
 ImageCraft/
 │
-├── training_data/
-│   ├── dataset/
-│   │   ├── flickr30k/
-│   │   └── mscoco/
-│   ├── checkpoints/
-│   └── pretrained_models/
+├── data/
+│   ├── raw/
+│   │   ├── flickr/
+│   │   └── coco/
+|   ├── interim/
+│   │   ├── flickr/
+│   │   └── coco/
+|   ├── processed/
+│   │   ├── flickr/
+│   │   └── coco/
+│   ├── logs/
+│   └── tensorboard/
 │
-├── VoiceCraft/
-│   ├── models/
+├── media/
+│   ├── images/
+|   └── voicecraft/
+│       ├── generated/
+│       └── voices/
+│           └── mfa_alignments/
+|
+├── models/
+│   ├── images/
+|   └── pretrained/
+│       ├── imagecraft/
+│       └── voicecraft/
+|
+├── notebooks/
+|
+├── reports/
+│   └── figures/
+|
+├── src/
 │   ├── data/
-│   └── inference_tts_scale.py
+|   |   ├── captiondataset.py
+│   |   └── download.py
+│   ├── model/
+|   |   ├── modules
+|   |   ├── inference.py
+│   |   └── train.py
+│   ├── utils/
+|   |   ├── model_utils.py
+|   |   ├── tools.py
+|   |   ├── train_utils.py
+│   |   └── util.py
+│   └── visualization/
 │
 ├── notebooks/
+│   └── ImageCraft-Notebook.ipynb
 ├── src/
 │   ├── data_preparation.py
 │   ├── train.py
 │   ├── inference.py
 │   └── utils.py
 │
-└── requirements.txt
+├── config.yaml
+|
+├── Makefile
+|
+├── packages.txt
+|
+├── README.md
+|
+├── requirements.txt
+|
+└── setup.py
 ```
 ## **Dataset**
 ### **Flickr30k and MSCOCO**
@@ -112,7 +157,6 @@ You can use the provided Gradio interface or run the inference script to generat
 import sys
 import os
 
-sys.path.append('/content/src/')
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["USER"] = "imagecraft"
