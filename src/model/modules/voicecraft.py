@@ -11,12 +11,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchmetrics.classification import MulticlassAccuracy
 
-from src.model.modules.codebooks_patterns import DelayedPatternProvider
+from .codebooks_patterns import DelayedPatternProvider
 
-from .modules.utils import make_pad_mask
+from .utils import make_pad_mask
 
-from .modules.embedding import SinePositionalEmbedding, TokenEmbedding
-from .modules.transformer import (
+from .embedding import SinePositionalEmbedding, TokenEmbedding
+from .transformer import (
     LayerNorm,
     TransformerEncoder,
     TransformerEncoderLayer,

@@ -15,10 +15,9 @@ def run(args):
 
     model = ImageCraft.from_pretrained("nsandiman/imagecraft-ft-co-224")
 
-    image = Image.open(args.image_path)
-    image.load()
-
-    audio_file = model.generate(image, args.output_type)
+    audio_file = model.generate(
+        args.image_path, max_tokens=100, do_sample=False, output_type=args.output_type
+    )
     print(audio_file)
 
 

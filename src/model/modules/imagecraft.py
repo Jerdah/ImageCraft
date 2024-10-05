@@ -1,10 +1,12 @@
 from argparse import Namespace
-from os import PathLike
+import glob
+import json
 from pathlib import Path
 import os
 import time
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 from PIL import Image
+from safetensors import safe_open
 import torch
 from torch import nn
 import torchaudio
@@ -16,7 +18,6 @@ from src.model.modules.siglip import SiglipVisionModel
 
 from transformers import (
     AutoTokenizer,
-    PaliGemmaForConditionalGeneration,
 )
 
 from src.model.modules.tokenizer import (
@@ -33,6 +34,8 @@ from src.utils.util import (
     save_to_file,
     split_line_to_sentences,
 )
+
+from huggingface_hub import HfApi
 
 
 class ImageCraftMultiModalProjector(nn.Module):
@@ -168,13 +171,9 @@ class ImageCraft(nn.Module):
 
         return final_embedding, causal_mask, position_ids
 
-    def _generate_caption(self, img, max_tokens=100, do_sample=False):
+    def _generate_caption(self, image_path, max_tokens=100, do_sample=False):
         prompt = "describe the image en"
-        try:
-            img.verify()
-            image = img
-        except Exception:
-            image = Image.open(img)
+        image = Image.open(image_path)
         model_inputs = get_model_inputs(self.processor, prompt, image, self.device)
         image.close()
         input_ids = model_inputs["input_ids"]
@@ -377,7 +376,7 @@ class ImageCraft(nn.Module):
         return outputs
 
     @torch.inference_mode()
-    def generate(self, image, max_tokens=300, do_sample=False, output_type="file"):
+    def generate(self, image, max_tokens=100, do_sample=False, output_type="file"):
         transcript = self._generate_caption(image, max_tokens, do_sample)
         speech_output = self._generate_speech(transcript, output_type)
         return transcript, speech_output
@@ -385,10 +384,9 @@ class ImageCraft(nn.Module):
     @classmethod
     def from_pretrained(
         cls,
-        pretrained_model_name_or_path: Optional[Union[str, PathLike]],
-        *model_args,
-        **kwargs,
+        repo_id,
     ):
+        api = HfApi()
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -397,29 +395,39 @@ class ImageCraft(nn.Module):
         Path(imagecraft_cache_dir).mkdir(parents=True, exist_ok=True)
         Path(voicecraft_cache_dir).mkdir(parents=True, exist_ok=True)
 
-        base_model = PaliGemmaForConditionalGeneration.from_pretrained(
-            pretrained_model_name_or_path,
-            low_cpu_mem_usage=True,
-            ignore_mismatched_sizes=True,
+        model_path = api.snapshot_download(
+            repo_id=repo_id,
+            repo_type="model",
             cache_dir=imagecraft_cache_dir,
         )
 
         # Load the tokenizer
         tokenizer = AutoTokenizer.from_pretrained(
-            pretrained_model_name_or_path, padding_side="right"
+            model_path,
+            padding_side="right",
+            cache_dir=imagecraft_cache_dir,
         )
         assert tokenizer.padding_side == "right"
 
-        config = base_model.config.to_dict()
+        # Find all the *.safetensors files
+        safetensors_files = glob.glob(os.path.join(model_path, "*.safetensors"))
 
-        config = ImageCraftConfig(**config)
+        # ... and load them one by one in the tensors dictionary
+        tensors = {}
+        for safetensors_file in safetensors_files:
+            with safe_open(safetensors_file, framework="pt", device="cpu") as f:
+                for key in f.keys():
+                    tensors[key] = f.get_tensor(key)
 
-        state_dict = base_model.state_dict()
+        # Load the model's config
+        with open(os.path.join(model_path, "config.json"), "r") as f:
+            model_config_file = json.load(f)
+            config = ImageCraftConfig(**model_config_file)
 
         model = cls(config).to(device)
 
         # Load the state dict of the model
-        model.load_state_dict(state_dict, strict=False)
+        model.load_state_dict(tensors, strict=False)
 
         # Tie weights
         model.tie_weights()
