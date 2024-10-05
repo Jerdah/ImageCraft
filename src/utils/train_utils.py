@@ -2,7 +2,7 @@ from tempfile import TemporaryDirectory
 import torch
 from huggingface_hub import HfApi
 
-PROMPT = "<image>Caption en<bos>"
+PROMPT = "<image>describe the image en<bos>"
 
 
 def train_collate_fn(examples, processor, device):
