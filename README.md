@@ -229,7 +229,7 @@ python -m src.model.inference --image_path "media/images/1.jpeg" --output_type "
 ### **Training**
 The training pipeline uses the following setup:
 
-- **Freezing Strategy**: Initially, only the GPT decoder is trained while the ViT encoder remains frozen. Later epochs unfreeze the ViT for end-to-end fine-tuning.
+- **Freezing Strategy**: Initially, only the Gemma decoder is trained while the SigLIP encoder remains frozen. Later epochs unfreeze the ViT for end-to-end fine-tuning.
 - **Metrics**: Training loss and test loss are monitored along with perplexity, which measures the quality of text predictions.
 
 To train the model from scratch:
@@ -269,7 +269,7 @@ Navigate to `http://localhost:5000` to use the web interface.
 There are no specific unit tests implemented in the code for different functions. Implementing unit tests with a framework like `pytest` is recommended for:
 
 - **Data Preprocessing**: Validate transformations and tokenization.
-- **Model Forward Passes**: Ensure that both ViT and GPT modules work as expected.
+- **Model Forward Passes**: Ensure that both SigLIP and Gemma modules work as expected.
 To add unit tests, consider creating a `tests/` directory with the following:
 
 `test_data_preparation.py`
