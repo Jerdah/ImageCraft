@@ -167,11 +167,17 @@ def imagecraft_interface(image_path, reference_text):
   """Process image inputs and generate audio response."""
   transcript, audio_buffer = model.generate(image_path, output_type="buffer")
 
-  bert_score_result = calculate_bert_score(reference_text, transcript)
-  bleu_score_result = calculate_bleu_score(reference_text, transcript)
-  rouge_score_result = calculate_rouge_score(reference_text, transcript)
+  if not reference_text:
+    evaluation_result = "No reference text provided for evaluation."
+  else:
+    reference_text = reference_text.strip().lower().rstrip('.')
+    transcript = transcript.strip().lower().rstrip('.')
 
-  evaluation_result = f"BERT Score: {bert_score_result:.4f}\nBLEU Score: {bleu_score_result:.4f}\nROUGE Score: {rouge_score_result:.4f}"
+    bert_score_result = calculate_bert_score(reference_text, transcript)
+    bleu_score_result = calculate_bleu_score(reference_text, transcript)
+    rouge_score_result = calculate_rouge_score(reference_text, transcript)
+
+    evaluation_result = f"BERT Score: {bert_score_result:.4f}\nBLEU Score: {bleu_score_result:.4f}\nROUGE Score: {rouge_score_result:.4f}"
 
 
   return audio_buffer, transcript, evaluation_result
