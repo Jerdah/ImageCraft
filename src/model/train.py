@@ -163,6 +163,12 @@ class ImageCraftModule(LightningModule):
             candidates = []
             references = []
 
+            columns = [
+                "prediction",
+                "references",
+            ]
+            log_data = []
+
             for pred, captions in zip(predictions, labels):
                 predicted_text = (
                     parts[1] if len(parts := pred.split("\n", 1)) > 1 else pred
@@ -170,7 +176,13 @@ class ImageCraftModule(LightningModule):
                 candidates.append(predicted_text)
                 references.append(captions)
 
-                print(f"References: {captions}\nPredicted: {predicted_text}")
+                if self.config.train_wandb_logger is not None:
+                    log_data.append([predicted_text, captions])
+
+            if len(log_data) > 0:
+                self.config.train_wandb_logger.log_text(
+                    key=f"log_samples_{batch_idx}", columns=columns, data=log_data
+                )
 
             corpus_scores = self.calculate_corpus_scores(references, candidates)
 
@@ -347,6 +359,14 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    env_config = tools.load_config()
+
+    checkpoint_dir = env_config["checkpoint_dir"]
+    imagecraft_checkpoint_dir = f"{checkpoint_dir}/imagecraft"
+
+    tensorboard_log_dir = env_config["data"]["tensorboard_log_dir"]
+    wandb_log_dir = env_config["data"]["wandb_dir"]
+
     config = TrainConfig
     config.max_tokens = args.max_tokens
     config.train_dataset = args.dataset
@@ -364,29 +384,25 @@ if __name__ == "__main__":
     config.train_limit_val_batches = args.limit_val_batches
     config.train_log_every_n_steps = args.log_every_n_steps
     config.train_log_to = args.log_to
+    config.train_wandb_logger = (
+        WandbLogger(name="imagecraft", log_model="all", save_dir=wandb_log_dir)
+        if args.log_to == "wandb"
+        else None
+    )
 
     dataset = args.dataset
-
-    env_config = tools.load_config()
-
-    checkpoint_dir = env_config["checkpoint_dir"]
-    imagecraft_checkpoint_dir = f"{checkpoint_dir}/imagecraft"
-
-    tensorboard_log_dir = env_config["data"]["tensorboard_log_dir"]
-    wandb_log_dir = env_config["data"]["wandb_dir"]
 
     model = ImageCraftModule(config)
     # model = torch.compile(model)
 
-    wandb_logger = WandbLogger(
-        name="imagecraft", log_model="all", save_dir=wandb_log_dir
-    )
     tensorboard_logger = TensorBoardLogger(
         name="imagecraft", save_dir=tensorboard_log_dir
     )
 
     logger = (
-        tensorboard_logger if config.train_log_to == "tensorboard" else wandb_logger
+        tensorboard_logger
+        if config.train_log_to == "tensorboard"
+        else config.train_wandb_logger
     )
 
     trainer = Trainer(
