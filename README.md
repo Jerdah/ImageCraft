@@ -10,6 +10,8 @@ ImageCraft is a deep learning project designed to generate spoken descriptions d
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1bzmNvc-XM9RPbkZEYFdap-nNJkrCvfzu#scrollTo=-SoOHUJHsfTD)
 
+![alt text](https://github.com/Jerdah/ImageCraft/blob/main/reports/figures/imagecraft-arch.jpeg)
+
 ## **Table of Contents**
 1. [Project Objectives](#project-objectives)
 2. [Directory Structure](#directory-structure)
