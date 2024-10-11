@@ -1,7 +1,13 @@
+import json
+import os
+from typing import Optional
 from PIL import Image
 
 
-from src.model.modules.paligemmaprocessor import PaliGemmaProcessor
+from src.model.modules.imagecraftconfig import ImageCraftConfig
+from src.model.modules.imagecraftprocessor import (
+    ImageCraftProcessor,
+)
 
 
 def move_inputs_to_device(model_inputs: dict, device: str):
@@ -10,24 +16,28 @@ def move_inputs_to_device(model_inputs: dict, device: str):
 
 
 def get_model_inputs(
-    processor: PaliGemmaProcessor, prompt: str, image_file_path: str, device: str
+    processor: ImageCraftProcessor,
+    prompt: str,
+    image: Image,
+    suffix: Optional[str] = None,
+    device: str = "cuda",
 ):
-    image = Image.open(image_file_path)
     images = [image]
     prompts = [prompt]
+    if suffix is not None:
+        suffix = [suffix]
     model_inputs = processor(text=prompts, images=images)
     model_inputs = move_inputs_to_device(model_inputs, device)
     return model_inputs
 
 
-def get_model_inputs(
-    processor: PaliGemmaProcessor, prompt: str, image: Image, device: str
-):
-    images = [image]
-    prompts = [prompt]
-    model_inputs = processor(text=prompts, images=images)
-    model_inputs = move_inputs_to_device(model_inputs, device)
-    return model_inputs
+def get_config(config_file="config.json"):
+    config = None
+    with open(config_file, "r") as f:
+        model_config_file = json.load(f)
+        config = ImageCraftConfig(**model_config_file)
+
+    return config
 
 
 # def load_hf_model(model_path: str, device: str) -> Tuple[ImageCraft, AutoTokenizer]:

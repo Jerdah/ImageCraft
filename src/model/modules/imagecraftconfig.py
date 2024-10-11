@@ -1,8 +1,8 @@
-from src.model.modules.gemma import GemmaConfig
-from src.model.modules.siglip import SiglipVisionConfig
+# from src.model.modules.gemma import GemmaConfig
+# from src.model.modules.siglip import SiglipVisionConfig
 from src.model.modules.voicecraftconfig import VoiceCraftConfig
 
-from transformers import PretrainedConfig
+from transformers import SiglipVisionConfig, GemmaConfig, PretrainedConfig
 
 
 class ImageCraftConfig(PretrainedConfig):
@@ -28,15 +28,13 @@ class ImageCraftConfig(PretrainedConfig):
         self.vocab_size = vocab_size
         self.projection_dim = projection_dim
         self.hidden_size = hidden_size
-        # self.vision_config = vision_config
         self.is_encoder_decoder = False
-        self.pad_token_id = pad_token_id
+
+        self.pad_token_id = pad_token_id if pad_token_id is not None else -1
 
         self.vision_config = SiglipVisionConfig(**vision_config)
 
-        # self.text_config = text_config
-        # self.text_config = GemmaConfig(**text_config, pad_token_id=pad_token_id)
-        self.text_config = GemmaConfig(**text_config)
+        self.text_config = GemmaConfig(**text_config, pad_token_id=pad_token_id)
         self.vocab_size = self.text_config.vocab_size
 
         self.text_config.num_image_tokens = (

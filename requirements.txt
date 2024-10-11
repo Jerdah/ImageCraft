@@ -8,6 +8,7 @@ huggingface-hub
 num2words
 datasets
 numpy
+numba
 pillow
 safetensors
 tokenizers
@@ -19,7 +20,9 @@ matplotlib
 peft
 bitsandbytes
 lightning
+wandb
 evaluate
 bert_score
 rouge_score
 huggingface_hub[hf_transfer]
+aac-metrics

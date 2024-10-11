@@ -1,7 +1,8 @@
-model_flickr: models/imagecraft-3b-fk-224.pth
-model_coco: models/imagecraft-ft-co-224
-model_checkpoints: models/checkpoints
-model_pretrained: models/pretrained
+model_flickr: nsandiman/imagecraft-pt-fk-224
+model_coco: models/imagecraft-pt-co-224
+model_tiny: models/imagecraft-pt-ty-224
+checkpoint_dir: models/checkpoint
+pretrained_dir: models/pretrained
 model_dir: models
 data:
   raw_dir: data/raw

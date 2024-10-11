@@ -20,6 +20,8 @@ class TrainConfig:
         train_precision="bf16-true",
         train_num_nodes=1,
         train_limit_val_batches=5,
+        train_log_every_n_steps=50,
+        train_log_to="tensorboard",
     ):
         self.max_tokens = max_tokens
         self.temperature = temperature
@@ -37,3 +39,5 @@ class TrainConfig:
         self.train_precision = train_precision
         self.train_num_nodes = train_num_nodes
         self.train_limit_val_batches = train_limit_val_batches
+        self.train_log_every_n_steps = train_log_every_n_steps
+        self.train_log_to = train_log_to

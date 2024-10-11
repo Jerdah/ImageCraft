@@ -1,0 +1,58 @@
+{
+  "_name_or_path": "nsandiman/imagecraft-ft-co-224",
+  "_vocab_size": 257216,
+  "architectures": [
+    "PaliGemmaForConditionalGeneration"
+  ],
+  "bos_token_id": 2,
+  "eos_token_id": 1,
+  "hidden_size": 2048,
+  "ignore_index": -100,
+  "image_token_index": 257152,
+  "model_type": "paligemma",
+  "pad_token_id": 0,
+  "projection_dim": 2048,
+  "text_config": {
+    "hidden_size": 2048,
+    "intermediate_size": 16384,
+    "model_type": "gemma",
+    "num_attention_heads": 8,
+    "num_hidden_layers": 18,
+    "num_image_tokens": 256,
+    "num_key_value_heads": 1,
+    "torch_dtype": "float32",
+    "vocab_size": 257216
+  },
+  "torch_dtype": "float32",
+  "transformers_version": "4.41.0.dev0",
+  "vision_config": {
+    "hidden_size": 1152,
+    "intermediate_size": 4304,
+    "model_type": "siglip_vision_model",
+    "num_attention_heads": 16,
+    "num_hidden_layers": 27,
+    "num_image_tokens": 256,
+    "patch_size": 14,
+    "projection_dim": 2048,
+    "projector_hidden_act": "gelu_fast",
+    "vision_use_head": false
+  },
+  "vocab_size": 257216,
+  "voicecraft_config": {
+    "model_name": "330M_TTSEnhanced.pth",
+    "encoded": "encodec_4cb2048_giga.th",
+    "voice_audio_path": "84_121550_000074_000000.wav",
+    "voice_audio_transcript": "But when I had approached so near to them The common object, which the sense deceives, Lost not by distance any of its marks",
+    "top_k": 0,
+    "top_p": 0.9,
+    "temperature": 1,
+    "kvcache": 1,
+    "codec_sr": 50,
+    "codec_audio_sr": 16000,
+    "silence_tokens": [1388, 1898, 131],
+    "stop_repetition": 3,
+    "sample_batch_size": 2,
+    "seed": 1,
+    "cut_off_sec": 7.87
+  }
+}

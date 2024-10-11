@@ -1,85 +1,66 @@
 import argparse
 from functools import partial
-import os
 from lightning import LightningModule
 import numpy as np
 import torch
 
 from datasets import load_from_disk
 
-
-from transformers import PaliGemmaForConditionalGeneration
-
-from transformers import AutoProcessor
+from transformers import PaliGemmaForConditionalGeneration, AutoProcessor
 
 from transformers import BitsAndBytesConfig
 from peft import get_peft_model, LoraConfig
 
 
-from src.data.download import download_coco, download_flickr
+from src.data.download import download_dataset
+from src.model.modules.imagecraft import ImageCraft
 from src.model.modules.trainconfig import TrainConfig
 from src.utils import tools
 
 from torch.utils.data import DataLoader
 
+from src.utils.model_utils import get_config
 from src.utils.train_utils import eval_collate_fn, save_to_hub, train_collate_fn
 
 from lightning.pytorch import Trainer
-from lightning.pytorch.loggers import TensorBoardLogger
+from lightning.pytorch.loggers import TensorBoardLogger, WandbLogger
 from lightning.pytorch.callbacks import EarlyStopping
 
-import evaluate
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+from aac_metrics import evaluate
 
 
-class ImageCraftTrainer(LightningModule):
+class ImageCraftModule(LightningModule):
     def __init__(self, config):
         super().__init__()
         self.config = config
         self.save_hyperparameters()
 
-    def prepare_data(self):
+        imagecraft_config = get_config()
 
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model = ImageCraft(imagecraft_config)
+
+    def prepare_data(self):
 
         env_config = tools.load_config()
 
-        raw_dir = env_config["data"]["raw_dir"]
-        interim_dir = env_config["data"]["interim_dir"]
         processed_dir = env_config["data"]["processed_dir"]
-        self.train_data_path = f"{processed_dir}/{dataset}/train"
-        self.test_data_path = f"{processed_dir}/{dataset}/test"
 
-        if self.config.train_dataset == "flickr":
-            download_flickr(
-                raw_dir,
-                interim_dir,
-                processed_dir,
-                dataset_size=self.config.train_dataset_size,
-            )
-        else:
-            download_coco(
-                raw_dir,
-                interim_dir,
-                processed_dir,
-                dataset_size=self.config.train_dataset_size,
-            )
+        train_data_path = f"{processed_dir}/{self.config.train_dataset}/train"
+        test_data_path = f"{processed_dir}/{self.config.train_dataset}/test"
 
-        # for param in self.model.vision_tower.parameters():
-        #     param.requires_grad = False
+        if self.config.train_dataset == "flickr" or self.config.train_dataset == "coco":
 
-        # for param in self.model.multi_modal_projector.parameters():
-        #     param.requires_grad = True
+            download_dataset(self.config.train_dataset, self.config.train_dataset_size)
+
+            self.training_dataset = load_from_disk(train_data_path)
+            self.testing_dataset = load_from_disk(test_data_path)
 
         bnb_config = BitsAndBytesConfig(
             load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True
         )
         lora_config = LoraConfig(
             r=8,
-            lora_dropout=0.05,
-            bias="none",
-            lora_alpha=32,
             target_modules=[
                 "q_proj",
                 "o_proj",
@@ -91,9 +72,6 @@ class ImageCraftTrainer(LightningModule):
             ],
             task_type="CAUSAL_LM",
         )
-
-        modelid = "google/paligemma-3b-pt-224"
-
         modelid = "google/paligemma-3b-pt-224"
 
         self.processor = AutoProcessor.from_pretrained(modelid)
@@ -108,31 +86,26 @@ class ImageCraftTrainer(LightningModule):
         self.model = get_peft_model(self.model, lora_config)
 
     def setup(self, stage: str):
-
-        self.training_dataset = load_from_disk(self.train_data_path)
-        self.testing_dataset = load_from_disk(self.test_data_path)
-
-        self.bertscore_metric = evaluate.load("bertscore")
-
-    def teardown(self, stage: str):
-
-        del self.model
-
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+        pass
 
     def training_step(self, batch, batch_idx):
 
-        input_ids, token_type_ids, attention_mask, pixel_values, captions = batch
+        input_ids = batch["input_ids"]
+        token_type_ids = batch["token_type_ids"]
+        attention_mask = batch["attention_mask"]
+        pixel_values = batch["pixel_values"]
+        labels = batch["labels"]
 
         outputs = self.model(
             input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             pixel_values=pixel_values,
-            labels=captions,
+            labels=labels,
         )
+
         loss = outputs.loss
+
         perplexity = torch.exp(torch.tensor(loss.item())).item()
 
         self.log(
@@ -160,8 +133,12 @@ class ImageCraftTrainer(LightningModule):
 
     def validation_step(self, batch, batch_idx):
 
-        input_ids, attention_mask, pixel_values, captions = batch
+        input_ids = batch["input_ids"]
+        attention_mask = batch["attention_mask"]
+        pixel_values = batch["pixel_values"]
+        labels = batch["labels"]
 
+        cider_scores = []
         with torch.no_grad():
             generated_ids = self.model.generate(
                 input_ids=input_ids,
@@ -169,35 +146,47 @@ class ImageCraftTrainer(LightningModule):
                 pixel_values=pixel_values,
                 max_new_tokens=self.config.max_tokens,
             )
-        predictions = self.processor.batch_decode(
-            generated_ids, skip_special_tokens=True
-        )
 
-        bert_f1_scores = []
-        bert_precision_scores = []
-        bert_recall_scores = []
-
-        for pred, caption in zip(predictions, captions):
-            predicted_text = parts[1] if len(parts := pred.split("\n", 1)) > 1 else pred
-            predictions = [predicted_text]
-            references = [caption]
-
-            # print(f"caption: {caption}")
-            # print(f"predicted: {predicted_text}")
-
-            scores = self.bertscore_metric.compute(
-                predictions=predictions, references=references, lang="en"
+            predictions = self.processor.batch_decode(
+                generated_ids, skip_special_tokens=True
             )
-            f1 = scores["f1"][0]
-            precision = scores["precision"][0]
-            recall = scores["recall"][0]
-            bert_f1_scores.append(f1)
-            bert_precision_scores.append(precision)
-            bert_recall_scores.append(recall)
+            bleu_1_scores = []
+            bleu_2_scores = []
+            bleu_3_scores = []
+            bleu_4_scores = []
+            rouge_l_scores = []
+            meteor_scores = []
+            cider_d_scores = []
+            spice_scores = []
+            spider_scores = []
+
+            candidates = []
+            references = []
+
+            for pred, captions in zip(predictions, labels):
+                predicted_text = (
+                    parts[1] if len(parts := pred.split("\n", 1)) > 1 else pred
+                )
+                candidates.append(predicted_text)
+                references.append(captions)
+
+                print(f"References: {captions}\nPredicted: {predicted_text}")
+
+            corpus_scores = self.calculate_corpus_scores(references, candidates)
+
+            bleu_1_scores.append(corpus_scores["bleu_1"].item())
+            bleu_2_scores.append(corpus_scores["bleu_2"].item())
+            bleu_3_scores.append(corpus_scores["bleu_3"].item())
+            bleu_4_scores.append(corpus_scores["bleu_4"].item())
+            rouge_l_scores.append(corpus_scores["rouge_l"].item())
+            meteor_scores.append(corpus_scores["meteor"].item())
+            cider_d_scores.append(corpus_scores["cider_d"].item())
+            spice_scores.append(corpus_scores["spice"].item())
+            spider_scores.append(corpus_scores["spider"].item())
 
         self.log(
-            "Precision",
-            np.mean(bert_precision_scores),
+            "bleu_1",
+            round(np.mean(bleu_1_scores), 2),
             on_step=True,
             on_epoch=True,
             prog_bar=True,
@@ -206,8 +195,8 @@ class ImageCraftTrainer(LightningModule):
             add_dataloader_idx=False,
         )
         self.log(
-            "Recall",
-            np.mean(bert_recall_scores),
+            "bleu_2",
+            round(np.mean(bleu_2_scores), 2),
             on_step=True,
             on_epoch=True,
             prog_bar=True,
@@ -216,8 +205,68 @@ class ImageCraftTrainer(LightningModule):
             add_dataloader_idx=False,
         )
         self.log(
-            "F1",
-            np.mean(bert_f1_scores),
+            "bleu_3",
+            round(np.mean(bleu_3_scores), 2),
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=self.config.train_batch_size,
+            logger=True,
+            add_dataloader_idx=False,
+        )
+        self.log(
+            "bleu_4",
+            round(np.mean(bleu_4_scores), 2),
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=self.config.train_batch_size,
+            logger=True,
+            add_dataloader_idx=False,
+        )
+        self.log(
+            "rouge_1",
+            round(np.mean(rouge_l_scores), 2),
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=self.config.train_batch_size,
+            logger=True,
+            add_dataloader_idx=False,
+        )
+        self.log(
+            "meteor",
+            round(np.mean(meteor_scores), 2),
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=self.config.train_batch_size,
+            logger=True,
+            add_dataloader_idx=False,
+        )
+        self.log(
+            "cider_d",
+            round(np.mean(cider_d_scores), 2),
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=self.config.train_batch_size,
+            logger=True,
+            add_dataloader_idx=False,
+        )
+        self.log(
+            "spice",
+            round(np.mean(spice_scores), 2),
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=self.config.train_batch_size,
+            logger=True,
+            add_dataloader_idx=False,
+        )
+        self.log(
+            "spider",
+            round(np.mean(spider_scores), 2),
             on_step=True,
             on_epoch=True,
             prog_bar=True,
@@ -226,7 +275,7 @@ class ImageCraftTrainer(LightningModule):
             add_dataloader_idx=False,
         )
 
-        return np.mean(bert_f1_scores)
+        return round(np.mean(cider_d_scores), 2)
 
     def on_train_end(self):
 
@@ -236,14 +285,9 @@ class ImageCraftTrainer(LightningModule):
             else "nsandiman/imagecraft-ft-co-224-pre"
         )
 
-        # self.model = self.model.merge_and_unload()
-
-        save_to_hub(self.model, self.processor.tokenizer, repository, "Final model")
-
-        # self.model.save_pretrained(repository)
-        # self.processor.save_pretrained(repository)
-        # self.model.push_to_hub(repository, commit_message=f"Training done")
-        # self.processor.push_to_hub(repository, commit_message=f"Training done")
+        save_to_hub(
+            self.model, self.processor.tokenizer, repository, "Final finetuned model"
+        )
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
@@ -275,23 +319,31 @@ class ImageCraftTrainer(LightningModule):
             ),
         )
 
+    def calculate_corpus_scores(
+        self, references: list[list[str]], candidates: list[str]
+    ):
+        corpus_scores, _ = evaluate(candidates, references)
+        return corpus_scores
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train the imagecraft model.")
-    parser.add_argument("--dataset", type=str, default="flickr")
-    parser.add_argument("--dataset_size", type=str, default="30%")
+    parser.add_argument("--dataset", type=str, default="coco")
+    parser.add_argument("--dataset_size", type=str, default="100%")
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--max_epochs", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=4)
+    parser.add_argument("--batch_size", type=int, default=2)
     parser.add_argument("--max_tokens", type=int, default=100)
     parser.add_argument("--learning_rate", type=int, default=2e-5)
-    parser.add_argument("--accumulate_grad_batches", type=int, default=4)
+    parser.add_argument("--accumulate_grad_batches", type=int, default=2)
     parser.add_argument("--gradient_clip_val", type=float, default=1.0)
     parser.add_argument("--check_val_every_n_epoch", type=int, default=1)
     parser.add_argument("--warmup_steps", type=int, default=2)
     parser.add_argument("--precision", type=str, default="bf16-true")
     parser.add_argument("--num_nodes", type=int, default=1)
-    parser.add_argument("--limit_val_batches", type=int, default=5)
+    parser.add_argument("--limit_val_batches", type=int, default=10)
+    parser.add_argument("--log_every_n_steps", type=int, default=50)
+    parser.add_argument("--log_to", type=str, default="tensorboard")
 
     args = parser.parse_args()
 
@@ -310,39 +362,53 @@ if __name__ == "__main__":
     config.train_precision = args.precision
     config.train_num_nodes = args.num_nodes
     config.train_limit_val_batches = args.limit_val_batches
-
-    torch.set_float32_matmul_precision("high")
+    config.train_log_every_n_steps = args.log_every_n_steps
+    config.train_log_to = args.log_to
 
     dataset = args.dataset
-    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     env_config = tools.load_config()
 
-    model_dir = env_config[f"model_dir"]
-    tensorboard_log_dir = env_config["data"]["tensorboard_log_dir"]
+    checkpoint_dir = env_config["checkpoint_dir"]
+    imagecraft_checkpoint_dir = f"{checkpoint_dir}/imagecraft"
 
-    model = ImageCraftTrainer(config)
+    tensorboard_log_dir = env_config["data"]["tensorboard_log_dir"]
+    wandb_log_dir = env_config["data"]["wandb_dir"]
+
+    model = ImageCraftModule(config)
     # model = torch.compile(model)
+
+    wandb_logger = WandbLogger(
+        name="imagecraft", log_model="all", save_dir=wandb_log_dir
+    )
+    tensorboard_logger = TensorBoardLogger(
+        name="imagecraft", save_dir=tensorboard_log_dir
+    )
+
+    logger = (
+        tensorboard_logger if config.train_log_to == "tensorboard" else wandb_logger
+    )
 
     trainer = Trainer(
         accelerator="gpu",
         strategy="auto",
-        enable_checkpointing=False,
+        enable_checkpointing=True,
         enable_progress_bar=True,
         enable_model_summary=True,
         min_epochs=1,
         max_epochs=config.train_max_epochs,
         accumulate_grad_batches=config.train_accumulate_grad_batches,
         check_val_every_n_epoch=config.train_check_val_every_n_epoch,
+        log_every_n_steps=1,
         gradient_clip_val=config.train_gradient_clip_val,
         precision=config.train_precision,
         limit_val_batches=config.train_limit_val_batches,
         num_sanity_val_steps=0,
-        default_root_dir=model_dir,
+        default_root_dir=imagecraft_checkpoint_dir,
         callbacks=[
-            EarlyStopping(monitor="train_loss", patience=3, verbose=False, mode="min")
+            EarlyStopping(monitor="train_loss", patience=3, verbose=False, mode="min"),
         ],
-        logger=TensorBoardLogger(name="imageCraft", save_dir=tensorboard_log_dir),
+        logger=logger,
     )
 
     trainer.fit(model)

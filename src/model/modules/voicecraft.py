@@ -13,7 +13,7 @@ from torchmetrics.classification import MulticlassAccuracy
 
 from .codebooks_patterns import DelayedPatternProvider
 
-from .utils import make_pad_mask
+from ...utils.util import make_pad_mask
 
 from .embedding import SinePositionalEmbedding, TokenEmbedding
 from .transformer import (

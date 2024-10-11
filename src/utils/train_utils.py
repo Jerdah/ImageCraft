@@ -1,8 +1,12 @@
+from pathlib import Path
 from tempfile import TemporaryDirectory
 import torch
 from huggingface_hub import HfApi
 
-PROMPT = "<image>describe the image en<bos>"
+from src.model.modules.gemma import KVCache
+from src.utils import tools
+
+PROMPT = "<image><bos>caption en"
 
 
 def train_collate_fn(examples, processor, device):
@@ -25,15 +29,21 @@ def train_collate_fn(examples, processor, device):
     token_type_ids = inputs["token_type_ids"]
     attention_mask = inputs["attention_mask"]
     pixel_values = inputs["pixel_values"]
-    captions = inputs["labels"]
+    labels = inputs["labels"]
 
-    return input_ids, token_type_ids, attention_mask, pixel_values, captions
+    return {
+        "input_ids": input_ids,
+        "token_type_ids": token_type_ids,
+        "attention_mask": attention_mask,
+        "pixel_values": pixel_values,
+        "labels": labels,
+    }
 
 
 def eval_collate_fn(examples, processor, device):
     images = [example["image"] for example in examples]
     texts = [PROMPT for _ in examples]
-    captions = [example["caption"][0] for example in examples]
+    captions = [example["caption"] for example in examples]
 
     inputs = processor(
         text=texts,
@@ -49,15 +59,20 @@ def eval_collate_fn(examples, processor, device):
     attention_mask = inputs["attention_mask"]
     pixel_values = inputs["pixel_values"]
 
-    return input_ids, attention_mask, pixel_values, captions
+    return {
+        "input_ids": input_ids,
+        "attention_mask": attention_mask,
+        "pixel_values": pixel_values,
+        "labels": captions,
+    }
 
 
 def save_to_hub(model, tokenizer, repository, commit_message):
     api = HfApi()
     with TemporaryDirectory() as tmp_dir:
         model = model.merge_and_unload()
-        model.save_pretrained(tmp_dir)
-        tokenizer.save_pretrained(tmp_dir)
+        model.save_pretrained(tmp_dir, safe_serialization=False)
+        tokenizer.save_pretrained(tmp_dir, safe_serialization=False)
 
         # Push to Hub
         api.upload_folder(

@@ -1,7 +1,8 @@
-from typing import List
+from typing import List, Optional
 from PIL import Image
 import numpy as np
 import torch
+
 
 from src.utils.util import (
     IMAGENET_STANDARD_MEAN,
@@ -10,8 +11,10 @@ from src.utils.util import (
     process_images,
 )
 
+from transformers import SiglipImageProcessor
 
-class PaliGemmaProcessor:
+
+class ImageCraftProcessor:
 
     IMAGE_TOKEN = "<image>"
 
@@ -37,6 +40,9 @@ class PaliGemmaProcessor:
         tokenizer.add_eos_token = False
 
         self.tokenizer = tokenizer
+        # self.image_processor = SiglipImageProcessor.from_pretrained(
+        #     "google/siglip-so400m-patch14-384"
+        # )
 
     def __call__(
         self,
@@ -49,6 +55,9 @@ class PaliGemmaProcessor:
             len(images) == 1 and len(text) == 1
         ), f"Received {len(images)} images for {len(text)} prompts."
 
+        # pixel_values = self.image_processor(images=images, return_tensors="pt")[
+        #     "pixel_values"
+        # ]
         pixel_values = process_images(
             images,
             size=(self.image_size, self.image_size),
@@ -62,7 +71,6 @@ class PaliGemmaProcessor:
         # Convert the numpy array to a PyTorch tensor
         pixel_values = torch.tensor(pixel_values)
 
-        # Prepend a `self.image_seq_length` number of image tokens to the prompt
         input_strings = [
             add_image_tokens_to_prompt(
                 prefix_prompt=prompt,
@@ -73,11 +81,13 @@ class PaliGemmaProcessor:
             for prompt in text
         ]
 
-        # Returns the input_ids and attention_mask as PyTorch tensors
+        # max_length += self.image_seq_length
+
         inputs = self.tokenizer(
             input_strings,
             return_tensors="pt",
             padding=padding,
+            max_length=512,
             truncation=truncation,
         )
 

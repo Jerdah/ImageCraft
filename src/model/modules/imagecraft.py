@@ -1,10 +1,12 @@
 from argparse import Namespace
 import glob
 import json
+import logging
 from pathlib import Path
 import os
+import pathlib
 import time
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple, Union
 from PIL import Image
 from safetensors import safe_open
 import torch
@@ -13,12 +15,12 @@ import torchaudio
 from src.model.modules import voicecraft
 from src.model.modules.gemma import GemmaForCausalLM, KVCache
 from src.model.modules.imagecraftconfig import ImageCraftConfig
-from src.model.modules.paligemmaprocessor import PaliGemmaProcessor
+from src.model.modules.imagecraftprocessor import (
+    ImageCraftProcessor,
+)
 from src.model.modules.siglip import SiglipVisionModel
 
-from transformers import (
-    AutoTokenizer,
-)
+from transformers import AutoTokenizer, AutoProcessor, AutoModel, AutoModelForCausalLM
 
 from src.model.modules.tokenizer import (
     AudioTokenizer,
@@ -26,7 +28,12 @@ from src.model.modules.tokenizer import (
     tokenize_audio,
     tokenize_text,
 )
-from src.utils.model_utils import get_model_inputs
+
+
+from src.utils import tools
+from src.utils.cache_utils import Cache, StaticCache
+from src.utils.image_utils import is_valid_image
+from src.utils.model_utils import get_config, get_model_inputs
 from src.utils.util import (
     replace_numbers_with_words,
     sample_top_p,
@@ -36,6 +43,8 @@ from src.utils.util import (
 )
 
 from huggingface_hub import HfApi
+
+logger = logging.getLogger(__name__)
 
 
 class ImageCraftMultiModalProjector(nn.Module):
@@ -48,7 +57,6 @@ class ImageCraftMultiModalProjector(nn.Module):
         )
 
     def forward(self, image_features):
-        # [Batch_Size, Num_Patches, Embed_Dim] -> [Batch_Size, Num_Patches, Projection_Dim]
         hidden_states = self.linear(image_features)
         return hidden_states
 
@@ -57,7 +65,6 @@ class ImageCraft(nn.Module):
     config_class = ImageCraftConfig
 
     def __init__(self, config: ImageCraftConfig):
-        # super().__init__(config)
         super(ImageCraft, self).__init__()
         self.config = config
         self.vision_tower = SiglipVisionModel(config.vision_config)
@@ -70,15 +77,64 @@ class ImageCraft(nn.Module):
             self.config.pad_token_id if self.config.pad_token_id is not None else -1
         )
 
+        tokenizer = AutoTokenizer.from_pretrained(
+            "google/paligemma-3b-pt-224",
+            padding_side="right",
+            token="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",
+        )
+        assert tokenizer.padding_side == "right"
+
+        num_image_tokens = config.vision_config.num_image_tokens
+        image_size = config.vision_config.image_size
+        self.processor = ImageCraftProcessor(tokenizer, num_image_tokens, image_size)
+
+        self.text_tokenizer = None
+
         self.voicecraft_model = None
         self.audio_tokenizer = None
-        self.text_tokenizer = None
-        self.processor = None
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
+    # Copied from transformers.models.llava.modeling_llava.LlavaForConditionalGeneration.tie_weights with Llava->PaliGemma
     def tie_weights(self):
         return self.language_model.tie_weights()
+
+    def forward(
+        self,
+        input_ids: torch.LongTensor = None,
+        pixel_values: torch.FloatTensor = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        kv_cache: Optional[KVCache] = None,
+    ) -> Tuple:
+        # Make sure the input is right-padded
+        assert torch.all(attention_mask == 1), "The input cannot be padded"
+
+        # 1. Extra the input embeddings
+        # shape: (Batch_Size, Seq_Len, Hidden_Size)
+        inputs_embeds = self.language_model.get_input_embeddings()(input_ids)
+
+        # 2. Merge text and images
+        # [Batch_Size, Channels, Height, Width] -> [Batch_Size, Num_Patches, Embed_Dim]
+        selected_image_feature = self.vision_tower(pixel_values.to(inputs_embeds.dtype))
+        # [Batch_Size, Num_Patches, Embed_Dim] -> [Batch_Size, Num_Patches, Hidden_Size]
+        image_features = self.multi_modal_projector(selected_image_feature)
+
+        # Merge the embeddings of the text tokens and the image tokens
+        inputs_embeds, attention_mask, position_ids = (
+            self._merge_input_ids_with_image_features(
+                image_features, inputs_embeds, input_ids, attention_mask, kv_cache
+            )
+        )
+
+        outputs = self.language_model(
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            inputs_embeds=inputs_embeds,
+            kv_cache=kv_cache,
+        )
+
+        return outputs
 
     def _merge_input_ids_with_image_features(
         self,
@@ -171,14 +227,23 @@ class ImageCraft(nn.Module):
 
         return final_embedding, causal_mask, position_ids
 
-    def _generate_caption(self, image_path, max_tokens=100, do_sample=False):
-        prompt = "describe the image en"
-        image = Image.open(image_path)
-        model_inputs = get_model_inputs(self.processor, prompt, image, self.device)
+    def _generate_caption(self, image, max_tokens=100, do_sample=False):
+        prompt = "caption en"
+        image = (
+            image.convert("RGB")
+            if is_valid_image(image)
+            else Image.open(image).convert("RGB")
+        )
+
+        inputs = get_model_inputs(
+            processor=self.processor, prompt=prompt, image=image, device=self.device
+        )
+
         image.close()
-        input_ids = model_inputs["input_ids"]
-        attention_mask = model_inputs["attention_mask"]
-        pixel_values = model_inputs["pixel_values"]
+
+        input_ids = inputs["input_ids"]
+        attention_mask = inputs["attention_mask"]
+        pixel_values = inputs["pixel_values"]
 
         kv_cache = KVCache()
 
@@ -219,7 +284,7 @@ class ImageCraft(nn.Module):
             parts[1] if len(parts := decoded_text.split("\n", 1)) > 1 else decoded_text
         )
 
-        return decoded_text
+        return decoded_text.rstrip(" .").strip().capitalize() + "."
 
     def _generate_speech(self, text: str, output_type="file"):
 
@@ -338,104 +403,71 @@ class ImageCraft(nn.Module):
 
         return output
 
-    def forward(
-        self,
-        input_ids: torch.LongTensor = None,
-        pixel_values: torch.FloatTensor = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        kv_cache: Optional[KVCache] = None,
-    ) -> Tuple:
-
-        # Make sure the input is right-padded
-        assert torch.all(attention_mask == 1), "The input cannot be padded"
-
-        # 1. Extra the input embeddings
-        # shape: (Batch_Size, Seq_Len, Hidden_Size)
-        inputs_embeds = self.language_model.get_input_embeddings()(input_ids)
-
-        # 2. Merge text and images
-        # [Batch_Size, Channels, Height, Width] -> [Batch_Size, Num_Patches, Embed_Dim]
-        selected_image_feature = self.vision_tower(pixel_values.to(inputs_embeds.dtype))
-        # [Batch_Size, Num_Patches, Embed_Dim] -> [Batch_Size, Num_Patches, Hidden_Size]
-        image_features = self.multi_modal_projector(selected_image_feature)
-
-        # Merge the embeddings of the text tokens and the image tokens
-        inputs_embeds, attention_mask, position_ids = (
-            self._merge_input_ids_with_image_features(
-                image_features, inputs_embeds, input_ids, attention_mask, kv_cache
-            )
-        )
-
-        outputs = self.language_model(
-            attention_mask=attention_mask,
-            position_ids=position_ids,
-            inputs_embeds=inputs_embeds,
-            kv_cache=kv_cache,
-        )
-
-        return outputs
-
     @torch.inference_mode()
-    def generate(self, image, max_tokens=100, do_sample=False, output_type="file"):
-        transcript = self._generate_caption(image, max_tokens, do_sample)
-        speech_output = self._generate_speech(transcript, output_type)
-        return transcript, speech_output
+    def generate(
+        self,
+        image,
+        max_tokens=30,
+        do_sample=False,
+        output_type="file",
+        return_output="speech",
+    ):
+        if return_output == "speech" or return_output is None:
+            transcript = self._generate_caption(image, max_tokens, do_sample)
+            speech = self._generate_speech(transcript, output_type)
+            return transcript, speech
+        else:
+            transcript = self._generate_caption(image, max_tokens, do_sample)
+            return transcript
 
     @classmethod
     def from_pretrained(
         cls,
-        repo_id,
+        model_path=None,
     ):
         api = HfApi()
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        imagecraft_cache_dir = "models/pretrained/imagecraft"
-        voicecraft_cache_dir = "models/pretrained/voicecraft"
-        Path(imagecraft_cache_dir).mkdir(parents=True, exist_ok=True)
-        Path(voicecraft_cache_dir).mkdir(parents=True, exist_ok=True)
+        env_config = tools.load_config()
+        pretrained_dir = env_config["pretrained_dir"]
+        imagecraft_cache_dir = f"{pretrained_dir}/imagecraft"
+        voicecraft_cache_dir = f"{pretrained_dir}/voicecraft"
 
-        model_path = api.snapshot_download(
-            repo_id=repo_id,
-            repo_type="model",
-            cache_dir=imagecraft_cache_dir,
-        )
+        state_dict = {}
 
-        # Load the tokenizer
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_path,
-            padding_side="right",
-            cache_dir=imagecraft_cache_dir,
-        )
-        assert tokenizer.padding_side == "right"
+        if Path(model_path).is_file():
+            checkpoint = torch.load(model_path, weights_only=False)
+            state_dict = checkpoint["state_dict"]
 
-        # Find all the *.safetensors files
-        safetensors_files = glob.glob(os.path.join(model_path, "*.safetensors"))
+        else:
 
-        # ... and load them one by one in the tensors dictionary
-        tensors = {}
-        for safetensors_file in safetensors_files:
-            with safe_open(safetensors_file, framework="pt", device="cpu") as f:
-                for key in f.keys():
-                    tensors[key] = f.get_tensor(key)
+            model_path = api.snapshot_download(
+                repo_id=model_path,
+                repo_type="model",
+                cache_dir=imagecraft_cache_dir,
+                local_files_only=False,
+            )
 
-        # Load the model's config
-        with open(os.path.join(model_path, "config.json"), "r") as f:
-            model_config_file = json.load(f)
-            config = ImageCraftConfig(**model_config_file)
+            safetensors_files = glob.glob(os.path.join(model_path, "*.safetensors"))
 
-        model = cls(config).to(device)
+            for safetensors_file in safetensors_files:
+                with safe_open(safetensors_file, framework="pt", device="cpu") as f:
+                    for key in f.keys():
+                        state_dict[key] = f.get_tensor(key)
+
+        imagecraft_config = get_config()
+
+        model = cls(imagecraft_config).to(device)
 
         # Load the state dict of the model
-        model.load_state_dict(tensors, strict=False)
+        model.load_state_dict(state_dict, strict=False)
 
         # Tie weights
         model.tie_weights()
 
-        num_image_tokens = model.config.vision_config.num_image_tokens
-        image_size = model.config.vision_config.image_size
-        model.processor = PaliGemmaProcessor(tokenizer, num_image_tokens, image_size)
         model = model.eval()
+
         # Load voicecraft module
 
         model.voicecraft_model = voicecraft.VoiceCraft.from_pretrained(
@@ -455,6 +487,7 @@ class ImageCraft(nn.Module):
             signature=encodec_fn,
             device=device,
         )
+
         model.text_tokenizer = TextTokenizer(backend="espeak")
 
         model.voicecraft_model.to(device)

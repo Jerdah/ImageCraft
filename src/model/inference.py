@@ -8,17 +8,16 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["USER"] = "imagecraft"
 import argparse
 
-from PIL import Image
-
 
 def run(args):
 
-    model = ImageCraft.from_pretrained("nsandiman/imagecraft-ft-co-224")
+    model = ImageCraft.from_pretrained(args.model_path)
 
-    audio_file = model.generate(
+    transcript, speech = model.generate(
         args.image_path, max_tokens=100, do_sample=False, output_type=args.output_type
     )
-    print(audio_file)
+    print(f"Transcript: {transcript}")
+    print(f"Speech file: {speech}")
 
 
 if __name__ == "__main__":
@@ -28,6 +27,9 @@ if __name__ == "__main__":
     )
     parser.add_argument("--image_path", type=str, default="media/images/1.jpeg")
     parser.add_argument("--output_type", type=str, default="file")
+    parser.add_argument(
+        "--model_path", type=str, default="nsandiman/imagecraft-ft-co-224"
+    )
 
     args = parser.parse_args()
 
