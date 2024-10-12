@@ -3,15 +3,15 @@
 #---------------------------------------------------
 # Download the data
 download:
-	python -m src.data.download --dataset "flickr" --dataset_size "100%"
+	python -m src.data.download --dataset "coco" --dataset_size "100%"
 
 # Train the model
 train:
-	python -m src.model.train --dataset "flickr" --dataset_size "100%" --batch_size 4 --max_epochs 10
+	python -m src.model.train --dataset "coco" --dataset_size "5%" --batch_size 2 --max_epochs 10 --log_every_n_steps 2 --log_to "wandb"
 
 # Run inference on the test data
 inference:
-	python -m python -m src.model.inference --image "media/images/man_on_bicycle.jpeg" --output_type "file"
+	python -m src.model.inference --image "media/images/1.jpeg" --output_type "file"
 
 # Run all: RUNS ALL SCRIPTS - DEFAULT
 all: download train inference
