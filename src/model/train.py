@@ -163,26 +163,14 @@ class ImageCraftModule(LightningModule):
             candidates = []
             references = []
 
-            columns = [
-                "prediction",
-                "references",
-            ]
-            log_data = []
-
             for pred, captions in zip(predictions, labels):
-                predicted_text = (
-                    parts[1] if len(parts := pred.split("\n", 1)) > 1 else pred
-                )
+                # predicted_text = (
+                #     parts[1] if len(parts := pred.split("\n", 1)) > 1 else pred
+                # )
+                predicted_text = pred.replace("caption en", "").replace("\n", "")
+                captions = [caption.replace("\n", "") for caption in captions]
                 candidates.append(predicted_text)
                 references.append(captions)
-
-                if self.config.train_wandb_logger is not None:
-                    log_data.append([predicted_text, captions])
-
-            if len(log_data) > 0:
-                self.config.train_wandb_logger.log_text(
-                    key=f"log_samples_{batch_idx}", columns=columns, data=log_data
-                )
 
             corpus_scores = self.calculate_corpus_scores(references, candidates)
 

@@ -10,7 +10,7 @@ PROMPT = "<image><bos>caption en"
 
 
 def train_collate_fn(examples, processor, device):
-    images = [example["image"] for example in examples]
+    images = [example["image"].convert("RGB") for example in examples]
     texts = [PROMPT for _ in examples]
     captions = [example["caption"][0] for example in examples]
 
@@ -41,7 +41,7 @@ def train_collate_fn(examples, processor, device):
 
 
 def eval_collate_fn(examples, processor, device):
-    images = [example["image"] for example in examples]
+    images = [example["image"].convert("RGB") for example in examples]
     texts = [PROMPT for _ in examples]
     captions = [example["caption"] for example in examples]
 
