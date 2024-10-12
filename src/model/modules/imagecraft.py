@@ -78,9 +78,7 @@ class ImageCraft(nn.Module):
         )
 
         tokenizer = AutoTokenizer.from_pretrained(
-            "google/paligemma-3b-pt-224",
-            padding_side="right",
-            token="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",
+            "google/paligemma-3b-pt-224", padding_side="right"
         )
         assert tokenizer.padding_side == "right"
 
