@@ -8,9 +8,9 @@
 ## **Overview**
 ImageCraft is a deep learning project designed to generate spoken descriptions directly from images. The goal is to create a model that combines vision and text-to-speech capabilities for accessibility tools, multimedia storytelling, and human-computer interaction. It utilizes a vision transformer (SigLIP) for image encoding, Gemma for text decoding, and VoiceCraft for speech synthesis.
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1bzmNvc-XM9RPbkZEYFdap-nNJkrCvfzu#scrollTo=-SoOHUJHsfTD)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1bzmNvc-XM9RPbkZEYFdap-nNJkrCvfzu#scrollTo=-SoOHUJHsfTD) [![HuggingFace](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/nsandiman/uarizona-msis-capstone-group5-imagecraft)
 
-![alt text](https://github.com/Jerdah/ImageCraft/blob/main/reports/figures/imagecraft-arch.jpeg) [![HuggingFace](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/nsandiman/uarizona-msis-capstone-group5-imagecraft)
+![alt text](https://github.com/Jerdah/ImageCraft/blob/main/reports/figures/imagecraft-arch.jpeg) 
 
 ## **Table of Contents**
 1. [Project Objectives](#project-objectives)
