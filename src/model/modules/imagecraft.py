@@ -1,12 +1,10 @@
 from argparse import Namespace
 import glob
-import json
 import logging
 from pathlib import Path
 import os
-import pathlib
 import time
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple
 from PIL import Image
 from safetensors import safe_open
 import torch
@@ -20,7 +18,7 @@ from src.model.modules.imagecraftprocessor import (
 )
 from src.model.modules.siglip import SiglipVisionModel
 
-from transformers import AutoTokenizer, AutoProcessor, AutoModel, AutoModelForCausalLM
+from transformers import AutoTokenizer
 
 from src.model.modules.tokenizer import (
     AudioTokenizer,
@@ -31,7 +29,6 @@ from src.model.modules.tokenizer import (
 
 
 from src.utils import tools
-from src.utils.cache_utils import Cache, StaticCache
 from src.utils.image_utils import is_valid_image
 from src.utils.model_utils import get_config, get_model_inputs
 from src.utils.util import (

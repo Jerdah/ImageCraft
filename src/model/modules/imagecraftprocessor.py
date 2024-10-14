@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from PIL import Image
 import numpy as np
 import torch
@@ -10,8 +10,6 @@ from src.utils.util import (
     add_image_tokens_to_prompt,
     process_images,
 )
-
-from transformers import SiglipImageProcessor
 
 
 class ImageCraftProcessor:
@@ -40,9 +38,6 @@ class ImageCraftProcessor:
         tokenizer.add_eos_token = False
 
         self.tokenizer = tokenizer
-        # self.image_processor = SiglipImageProcessor.from_pretrained(
-        #     "google/siglip-so400m-patch14-384"
-        # )
 
     def __call__(
         self,
@@ -55,9 +50,6 @@ class ImageCraftProcessor:
             len(images) == 1 and len(text) == 1
         ), f"Received {len(images)} images for {len(text)} prompts."
 
-        # pixel_values = self.image_processor(images=images, return_tensors="pt")[
-        #     "pixel_values"
-        # ]
         pixel_values = process_images(
             images,
             size=(self.image_size, self.image_size),
