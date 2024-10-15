@@ -61,14 +61,14 @@ ImageCraft/
 │       └── voicecraft/
 |
 ├── notebooks/
-│   └── ImageCraft-Notebook.ipynb
+│   └── ImageCraft.ipynb
 |
 ├── reports/
 │   └── figures/
 |
 ├── src/
 │   ├── data/
-|   |   ├── captiondataset.py
+|   |   ├── imagecraftdataset.py
 │   |   └── download.py
 │   ├── model/
 |   |   ├── modules
