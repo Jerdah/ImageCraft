@@ -121,12 +121,13 @@ ImageCraft consists of three major components:
 To set up the environment and install the necessary dependencies, follow the steps below:
 
 1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/Jerdah/ImageCraft.git
-   cd ImageCraft
-   ```
 
-2.**Install System-Level Dependencies**:
+```bash
+git clone https://github.com/Jerdah/ImageCraft.git
+cd ImageCraft
+```
+
+2. **Install System-Level Dependencies**:
 
 ```bash
 apt-get install -y espeak-ng espeak espeak-data libespeak1 libespeak-dev festival* build-essential flac libasound2-dev libsndfile1-dev vorbis-tools libxml2-dev libxslt-dev zlib1g-dev
