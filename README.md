@@ -16,12 +16,9 @@ ImageCraft is a deep learning project designed to generate spoken descriptions d
 4. [Model Architecture](#model-architecture)
 5. [Installation](#installation)
 6. [Usage](#usage)
-7. [Training and Evaluation](#training-and-evaluation)
-8. [Deployment](#deployment)
-9. [Testing](#testing)
-10. [Results and Visualization](#results-and-visualization)
-11. [Future Work](#future-work)
-12. [References](#references)
+7. [Training](#training)
+8. [Future Work](#future-work)
+9. [References](#references)
 
 ## **Project Objectives**
 
@@ -290,9 +287,7 @@ imagecraft_app.launch()
 python -m src.model.inference --image_path "media/images/1.jpeg" --output_type "file"
 ```
 
-## **Training and Evaluation**
-
-### **Training**
+## **Training**
 
 Specify training log collector:
 
