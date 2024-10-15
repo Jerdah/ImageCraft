@@ -314,9 +314,9 @@ python -m src.model.train --dataset "coco" --dataset_size "20%" --batch_size 2 -
 
 ## **License**
 
-This codebase is under CC BY-NC-SA 4.0 (LICENSE-CODE). Note that we use some of the code from other repository that are under different licenses: ./src/model/modules/voicecraft.py is under CC BY-NC-SA 4.0; ./src/model/modules/codebooks_patterns.py is under MIT license; ./src/model/modules/tokenizer.py are under Apache License, Version 2.0; the phonemizer we used is under GNU 3.0 License.
+This codebase is under CC BY-NC-SA 4.0 ([LICENSE-CODE](./LICENSE-CODE)). Note that we use some of the code from other repository that are under different licenses: ./src/model/modules/voicecraft.py is under CC BY-NC-SA 4.0; ./src/model/modules/codebooks_patterns.py is under MIT license; ./src/model/modules/tokenizer.py are under Apache License, Version 2.0; the phonemizer we used is under GNU 3.0 License.
 
 ## **Acknowledgments**
 
 - Thanks to [nsandiman](https://github.com/nsandiman), [ravinamore-ml](https://github.com/ravinamore-ml), [Masengug](https://github.com/Masengug) and [Jerdah](https://github.com/Jerdah)
-- We thank Umar Jamil for his work [pytorch-paligemma](https://github.com/hkproj/pytorch-paligemma), from which we took lots of inspiration.
+- We thank Umar Jamil for his work [pytorch-paligemma](https://github.com/hkproj/pytorch-paligemma), from where we took lot of inspiration.
