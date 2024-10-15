@@ -61,7 +61,7 @@ def download_dataset(dataset_name, dataset_size="10%"):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Download tool")
-    parser.add_argument("--dataset", type=str, default="flickr")
+    parser.add_argument("--dataset", type=str, default="coco")
     parser.add_argument("--dataset_size", type=str, default="10%")
 
     args = parser.parse_args()

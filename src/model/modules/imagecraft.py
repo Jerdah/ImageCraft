@@ -418,7 +418,7 @@ class ImageCraft(nn.Module):
     @classmethod
     def from_pretrained(
         cls,
-        model_path=None,
+        model_path="nsandiman/imagecraft-ft-co-224",
     ):
         api = HfApi()
 
