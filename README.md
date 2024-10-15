@@ -11,14 +11,13 @@ ImageCraft is a deep learning project designed to generate spoken descriptions d
 ## **Table of Contents**
 
 1. [Project Objectives](#project-objectives)
-2. [Directory Structure](#directory-structure)
-3. [Dataset](#dataset)
-4. [Model Architecture](#model-architecture)
-5. [Installation](#installation)
-6. [Usage](#usage)
-7. [Training](#training)
-8. [Future Work](#future-work)
-9. [References](#references)
+2. [Dataset](#dataset)
+3. [Model Architecture](#model-architecture)
+4. [Installation](#installation)
+5. [Usage](#usage)
+6. [Training](#training)
+7. [Future Work](#future-work)
+8. [References](#references)
 
 ## **Project Objectives**
 
@@ -27,72 +26,6 @@ The primary objectives of ImageCraft are:
 - To create a multimodal pipeline that converts input images into meaningful spoken descriptions.
 - To utilize transformer-based models, specifically a vision transformer (SigLIP) as an image encoder and a Gemma decoder.
 - To facilitate image-to-speech for accessibility use cases.
-
-## **Directory Structure**
-
-The primary objectives of ImageCraft are:
-
-```css
-ImageCraft/
-│
-├── data/
-│   ├── raw/
-│   │   ├── flickr/
-│   │   └── coco/
-|   ├── interim/
-│   │   ├── flickr/
-│   │   └── coco/
-|   ├── processed/
-│   │   ├── flickr/
-│   │   └── coco/
-│   ├── logs/
-│   └── tensorboard/
-│
-├── media/
-│   ├── images/
-|   └── voicecraft/
-│       ├── generated/
-│       └── voices/
-│           └── mfa_alignments/
-|
-├── models/
-|   └── pretrained/
-│       ├── imagecraft/
-│       └── voicecraft/
-|
-├── notebooks/
-│   └── ImageCraft.ipynb
-|
-├── reports/
-│   └── figures/
-|
-├── src/
-│   ├── data/
-|   |   ├── imagecraftdataset.py
-│   |   └── download.py
-│   ├── model/
-|   |   ├── modules
-|   |   ├── inference.py
-│   |   └── train.py
-│   ├── utils/
-|   |   ├── model_utils.py
-|   |   ├── tools.py
-|   |   ├── train_utils.py
-│   |   └── util.py
-│   └── visualization/
-│
-├── config.yaml
-|
-├── Makefile
-|
-├── packages.txt
-|
-├── README.md
-|
-├── requirements.txt
-|
-└── setup.py
-```
 
 ## **Dataset**
 
