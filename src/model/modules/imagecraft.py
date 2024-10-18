@@ -18,7 +18,7 @@ from src.model.modules.imagecraftprocessor import (
 )
 from src.model.modules.siglip import SiglipVisionModel
 
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoProcessor
 
 from src.model.modules.tokenizer import (
     AudioTokenizer,
@@ -73,15 +73,15 @@ class ImageCraft(nn.Module):
         self.pad_token_id = (
             self.config.pad_token_id if self.config.pad_token_id is not None else -1
         )
+        modelid = "google/paligemma-3b-pt-224"
+        # tokenizer = AutoTokenizer.from_pretrained(modelid, padding_side="right")
+        # assert tokenizer.padding_side == "right"
 
-        tokenizer = AutoTokenizer.from_pretrained(
-            "google/paligemma-3b-pt-224", padding_side="right"
-        )
-        assert tokenizer.padding_side == "right"
+        self.processor = AutoProcessor.from_pretrained(modelid)
 
-        num_image_tokens = config.vision_config.num_image_tokens
-        image_size = config.vision_config.image_size
-        self.processor = ImageCraftProcessor(tokenizer, num_image_tokens, image_size)
+        # num_image_tokens = config.vision_config.num_image_tokens
+        # image_size = config.vision_config.image_size
+        # self.processor = ImageCraftProcessor(tokenizer, num_image_tokens, image_size)
 
         self.text_tokenizer = None
 
@@ -90,7 +90,6 @@ class ImageCraft(nn.Module):
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # Copied from transformers.models.llava.modeling_llava.LlavaForConditionalGeneration.tie_weights with Llava->PaliGemma
     def tie_weights(self):
         return self.language_model.tie_weights()
 
@@ -99,7 +98,6 @@ class ImageCraft(nn.Module):
         input_ids: torch.LongTensor = None,
         pixel_values: torch.FloatTensor = None,
         attention_mask: Optional[torch.Tensor] = None,
-        labels: Optional[torch.LongTensor] = None,
         kv_cache: Optional[KVCache] = None,
     ) -> Tuple:
         # Make sure the input is right-padded
@@ -230,9 +228,17 @@ class ImageCraft(nn.Module):
             else Image.open(image).convert("RGB")
         )
 
-        inputs = get_model_inputs(
-            processor=self.processor, prompt=prompt, image=image, device=self.device
-        )
+        # inputs = get_model_inputs(
+        #     processor=self.processor, prompt=prompt, image=image, device=self.device
+        # )
+
+        inputs = self.processor(
+            text=prompt,
+            images=image,
+            return_tensors="pt",
+            padding="longest",
+            do_convert_rgb=True,
+        ).to(self.device)
 
         image.close()
 
@@ -402,7 +408,7 @@ class ImageCraft(nn.Module):
     def generate(
         self,
         image,
-        max_tokens=30,
+        max_tokens=100,
         do_sample=False,
         output_type="file",
         return_output="speech",

@@ -24,7 +24,7 @@ ImageCraft is a deep learning project designed to generate spoken descriptions d
 The primary objectives of ImageCraft are:
 
 - To create a multimodal pipeline that converts input images into meaningful spoken descriptions.
-- To utilize transformer-based models, specifically a vision transformer (SigLIP) as an image encoder and a Gemma decoder.
+- To utilize transformer-based models, specifically a vision transformer (SigLIP) as an image e ncoder and a Gemma decoder.
 - To facilitate image-to-speech for accessibility use cases.
 
 ## **Dataset**

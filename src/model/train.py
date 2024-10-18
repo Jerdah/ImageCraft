@@ -36,9 +36,9 @@ class ImageCraftModule(LightningModule):
         self.config = config
         self.save_hyperparameters()
 
-        imagecraft_config = get_config()
+        # imagecraft_config = get_config()
 
-        self.model = ImageCraft(imagecraft_config)
+        # self.model = ImageCraft(imagecraft_config)
 
     def prepare_data(self):
 
@@ -138,7 +138,6 @@ class ImageCraftModule(LightningModule):
         pixel_values = batch["pixel_values"]
         labels = batch["labels"]
 
-        cider_scores = []
         with torch.no_grad():
             generated_ids = self.model.generate(
                 input_ids=input_ids,
@@ -164,9 +163,6 @@ class ImageCraftModule(LightningModule):
             references = []
 
             for pred, captions in zip(predictions, labels):
-                # predicted_text = (
-                #     parts[1] if len(parts := pred.split("\n", 1)) > 1 else pred
-                # )
                 predicted_text = pred.replace("caption en", "").replace("\n", "")
                 captions = [caption.replace("\n", "") for caption in captions]
                 candidates.append(predicted_text)
@@ -225,7 +221,7 @@ class ImageCraftModule(LightningModule):
             add_dataloader_idx=False,
         )
         self.log(
-            "rouge_1",
+            "rouge_l",
             round(np.mean(rouge_l_scores), 2),
             on_step=True,
             on_epoch=True,
@@ -331,7 +327,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, default="coco")
     parser.add_argument("--dataset_size", type=str, default="100%")
     parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--max_epochs", type=int, default=10)
+    parser.add_argument("--max_epochs", type=int, default=20)
     parser.add_argument("--batch_size", type=int, default=2)
     parser.add_argument("--max_tokens", type=int, default=100)
     parser.add_argument("--learning_rate", type=int, default=2e-5)
@@ -341,7 +337,7 @@ if __name__ == "__main__":
     parser.add_argument("--warmup_steps", type=int, default=2)
     parser.add_argument("--precision", type=str, default="bf16-true")
     parser.add_argument("--num_nodes", type=int, default=1)
-    parser.add_argument("--limit_val_batches", type=int, default=10)
+    parser.add_argument("--limit_val_batches", type=int, default=50)
     parser.add_argument("--log_every_n_steps", type=int, default=50)
     parser.add_argument("--log_to", type=str, default="tensorboard")
 

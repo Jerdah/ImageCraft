@@ -71,8 +71,8 @@ def save_to_hub(model, tokenizer, repository, commit_message):
     api = HfApi()
     with TemporaryDirectory() as tmp_dir:
         model = model.merge_and_unload()
-        model.save_pretrained(tmp_dir, safe_serialization=False)
-        tokenizer.save_pretrained(tmp_dir, safe_serialization=False)
+        model.save_pretrained(tmp_dir)
+        tokenizer.save_pretrained(tmp_dir)
 
         # Push to Hub
         api.upload_folder(
